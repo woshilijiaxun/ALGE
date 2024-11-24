@@ -158,7 +158,7 @@ def load_graph(path):
 
 if __name__=='__main__':
     #加载 .pkl 文件
-    with open('ken_table.pkl', "rb") as file:
+    with open('node_rank_record.pkl', "rb") as file:
         data = pickle.load(file)
     # 查看内容
     print(data)
