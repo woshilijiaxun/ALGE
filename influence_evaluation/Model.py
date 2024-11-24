@@ -14,6 +14,7 @@ class GATv3(nn.Module):
         if GATv3_P["activation"] == "tanh":   self.AF = nn.Tanh()
         if GATv3_P["activation"] == "sigmod":  self.AF = nn.Sigmoid()
         if GATv3_P["activation"] == "elu":  self.AF = nn.ELU()
+
         self.in_dim,self.out_dim ,self.embed_dim, self.bias,self.dropout,self.heads = GATv3_P["in_dim"], GATv3_P["out_dim"], GATv3_P["embed_dim"], GATv3_P["bias"],GATv3_P["dropout"], GATv3_P['heads']
         self.layer = nn.ModuleList()
         self.layer.append(GATv2Conv(self.in_dim,32,num_heads = self.heads[0],bias = self.bias,activation = None,negative_slope=0.2,attn_drop=0.0))

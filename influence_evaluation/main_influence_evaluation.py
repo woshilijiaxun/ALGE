@@ -2,14 +2,14 @@ import networkx as nx
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from ALGE import ALGE_C
-from other_algorithms import ci,k_shell,h_index,lid,dcl,ncvr,rcnn,glstm
+from influence_evaluation.ALGE import ALGE_C
+from influence_evaluation.other_algorithms import ci,k_shell,h_index,lid,dcl,ncvr,rcnn,glstm
 import numpy as np
 import math
 import influence_evaluation.Model
 from Utils import load_csv_net_gcc,LSTMModel
 import pickle
-
+import random
 def calculate_test(G,data_memory):
     k_algec, r_algec, node_algec, node_rank_algec, _, train_nodes = ALGE_C(G, data_memory)
     k_c,r_c,node_c,node_rank_CI = ci(G,data_memory,train_nodes)
@@ -62,7 +62,107 @@ def frequency_rank(rank_list,name,n=0):
         plt.scatter(x,y,marker=m[i],label =methods[i],s=20,alpha=0.8,c=colors[i],edgecolors=edgecolors[i])  # edgecolor
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5), ncol=1, frameon=True, fontsize=10)
     plt.savefig('%s rank frequency_%s.png' % (name,n),dpi=300)
+
+class InfluenceCalculator:
+    def __init__(self, graph):
+        self.G = graph
+
+    def sir_model(self, beta, source_node):
+        """
+        SIR模型的简化实现，恢复概率为1
+        """
+        nodes = self.G.nodes()
+        state = {node: 'S' for node in nodes}
+        # 如果 source_node 是单个节点（非列表），将其转换为列表
+        if isinstance(source_node, int):
+            source_node = [source_node]
+
+        # 将 source_node 列表中的节点设置为 'I'（感染状态）
+        for node in source_node:
+            state[node] = 'I'
+
+
+        while 'I' in state.values():
+            susceptible_nodes = [node for node in nodes if state[node] == 'S']
+            for susceptible_node in susceptible_nodes:
+                neighbors = list(self.G.neighbors(susceptible_node))
+                for neighbor in neighbors:
+                    if state[neighbor] == 'I' and random.random() < beta:
+                        state[susceptible_node] = 'I'
+
+                        break  # 一旦感染，中断内循环
+
+            for node in nodes:
+                    if state[node] == 'I':
+                        state[node] = 'R'
+
+        recovered_nodes = [node for node in nodes if state[node] == 'R']
+        return len(recovered_nodes)
+
+    def calculate_average_influence(self, beta, source_node, experiments=500, iterations_per_experiment=100):
+        """
+        计算节点的平均影响度量
+        """
+        total_influence = 0
+        for _ in range(experiments):
+            total_influence += self.sir_model(beta, source_node)
+
+        average_influence = total_influence / experiments
+        return average_influence
+
+    def calculate_sorted_nodes(self, beta):
+        """
+        计算并返回按平均影响度量降序排序的节点列表
+        """
+        average_influence_measures = [[node, self.calculate_average_influence(beta, node)] for node in self.G.nodes()]
+        sorted_nodes = sorted(average_influence_measures, key=lambda x: x[1], reverse=True)
+        return [item[0] for item in sorted_nodes],[item[1] for item in sorted_nodes],sorted_nodes
+
+    # def calculate_transmission_capacity(self, beta, initial_infected_nodes, experiments=100, iterations_per_experiment=30):
+    #     """
+    #     计算节点在30个不同时间步中的传染能力
+    #     """
+    #     transmission_capacity = []
+    #     for _ in range(experiments):
+    #         infected_nodes = initial_infected_nodes.copy()  # 复制初始感染节点列表
+    #         recovered_nodes = []
+    #         for _ in range(iterations_per_experiment):
+    #             for node in infected_nodes[:]:  # 使用切片来复制列表，避免在循环中修改列表长度
+    #                 neighbors = list(self.G.neighbors(node))
+    #                 for neighbor in neighbors:
+    #                     if random.random() < beta and neighbor not in infected_nodes and neighbor not in recovered_nodes:
+    #                         infected_nodes.append(neighbor)
+    #                 infected_nodes.remove(node)
+    #                 recovered_nodes.append(node)
+    #             transmission_capacity.append(len(infected_nodes) + len(recovered_nodes))
+    #     return transmission_capacity[:30]  # 返回传染能力列表的前30个元素
+def threshhold(G):
+    # 计算网络的平均度
+    avg_degree = sum(dict(G.degree()).values()) / len(G)
+    # 计算网络中每个节点的度数，求平方并相加
+    squared_degree_sum = sum(deg ** 2 for node, deg in G.degree())
+    # 计算度的平方的平均值
+    average_squared_degree = squared_degree_sum / len(G)
+    beita = avg_degree / (average_squared_degree - avg_degree)
+    return round(beita, 4)
+
+def load_graph(path):
+    G = nx.Graph()
+    with open(path, 'r') as text:
+        for line in text:
+            vertices = line.strip().split(' ')
+            source = int(vertices[0])
+            target = int(vertices[-1])
+            G.add_edge(source, target)
+    return G
+
 if __name__=='__main__':
+    #加载 .pkl 文件
+    with open('ken_table.pkl', "rb") as file:
+        data = pickle.load(file)
+    # 查看内容
+    print(data)
+
     # 影响力label路径，网络数据路径，所有网络名称
     inpath  = '..\\dataset\\real\\'
     influence_path= '..\\dataset\\real_influence\\'
@@ -86,14 +186,20 @@ if __name__=='__main__':
     # with open('node_rank_record.pkl', 'rb') as f:
     #     node_rank_record = pickle.load(f)
 
-    for x in range(0,34):
+    for x in range(15,16):
         name = net_names[x]  # 网络名
         print("net %s %s" % (x + 1, name))
-        data = pd.read_csv(influence_path + '%s_gcc_Influence_P=1.5betac_Run1000.csv' % (name))  # 仿真得到的真实值
-        data_memory = [list(data.loc[i]) for i in range(len(data))]
-        G, pos = load_csv_net_gcc(name)
+        #data = pd.read_csv(influence_path + '%s_gcc_Influence_P=1.5betac_Run1000.csv' % (name))  # 仿真得到的真实值
+        #data_memory = [list(data.loc[i]) for i in range(len(data))]
+        # G, pos = load_csv_net_gcc(name)
+        G = load_graph(r'C:\Users\ADM\Desktop\CycleRatio-main\Dataset\Jazz.txt')
         G = nx.convert_node_labels_to_integers(G)
+        print(G)
+        b = threshhold(G) * 1.5
+        data_memory = InfluenceCalculator(G).calculate_sorted_nodes(b)[-1]
+        print(data_memory)
         ken_list,rank_list,node_sort,node_rank,train_nodes=calculate_test(G,data_memory)
+
         for x in data_memory: x[0] = int(x[0])
         simu_I = data_memory.copy()
         simu_I.sort(key=lambda x: x[1], reverse=True)
@@ -130,10 +236,10 @@ if __name__=='__main__':
     #     pickle.dump(node_rank_record, f)
     # with open('data.pkl', 'rb') as f:
     #     loaded_a = pickle.load(f)
-    df = pd.DataFrame(columns =['name','train_size','CI','kshell','H-index','LID','DCL','NCVR','RCNN','GLSTM','ALGE-C'])
-    df['name'] = net_names
-    df['train_size'] = [len(x) for x in train_nodes_list]
-    for i,column in enumerate(['CI','kshell','H-index','LID','DCL','NCVR','RCNN','GLSTM','ALGE-C']):
-        print(column)
-        df[column] = [x[i] for x in ken_table]
-    df.to_csv('ken_table_test_data.csv')
+    # df = pd.DataFrame(columns =['name','train_size','CI','kshell','H-index','LID','DCL','NCVR','RCNN','GLSTM','ALGE-C'])
+    # df['name'] = net_names
+    # df['train_size'] = [len(x) for x in train_nodes_list]
+    # for i,column in enumerate(['CI','kshell','H-index','LID','DCL','NCVR','RCNN','GLSTM','ALGE-C']):
+    #     print(column)
+    #     df[column] = [x[i] for x in ken_table]
+    # df.to_csv('ken_table_test_data.csv')

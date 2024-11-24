@@ -14,16 +14,17 @@ import torch
 import torch.nn as nn
 import warnings
 from influence_evaluation.Model import GATv3Net
-from Utils import get_dgl_g_input
+from Utils import get_dgl_g_input, get_dgl_g_input_test
 from influence_evaluation.Active_learning import al_model
 warnings.filterwarnings('ignore')
 
 def ALGE_C(G,data_memory):
-    model = torch.load('..\\influence_evaluation\\ALGE_B.pth')
+    model = torch.load('..\\influence_evaluation\\ALGE_B_5features.pth')
     gatv3_ALGE_sample_sets = al_model(G)
     g = dgl.from_networkx(G)
-    node_features_ = get_dgl_g_input(G)
-    node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    node_features = get_dgl_g_input_test(G)
+    # node_features_ = get_dgl_g_input(G)
+    # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
     for d in data_memory: d[0] = int(d[0])
     simu_I = data_memory.copy()
     simu_I.sort(key=lambda x: x[1], reverse=True)
@@ -85,11 +86,13 @@ def train(train_nodes, model, data_memory, g, node_features,G):
         value = model(g, node_features)
         test_ls.append(rmse(value, [x[0] for x in data_test], [x[1] for x in data_test]))
         model.train()
-    plt.figure()
-    plt.title('%s'%len(G))
-    plt.plot(list(range(len(test_ls))),test_ls)
-    plt.show()
-    plt.close()
+        print(f'Epoch {epoch}, Test Loss: {test_ls[-1]}')
+
+    # plt.figure()
+    # plt.title('%s'%len(G))
+    # plt.plot(list(range(len(test_ls))),test_ls)
+    # plt.show()
+    # plt.close()
     pre_gat = model(g, node_features)
     model.eval()
     value = model(g, node_features)
@@ -99,11 +102,14 @@ def train(train_nodes, model, data_memory, g, node_features,G):
     value_ = value.flatten().detach().numpy()
     value_ = sorted(value_, reverse=True)
     rank=[1]
+
+
     for i in range(1,len(value_)):
         if value_[i]<value_[i-1]:
             rank.append(i+1)
         elif value_[i]==value_[i-1]:
             rank.append(rank[-1])
+
     ken_pre2,pre_sort,node_rank_pre = calculate_ken(G, pre_gat, data_memory,train_nodes)
     all_data_loss2 = rmse(pre_gat, [x[0] for x in data_memory], [x[1] for x in data_memory])
     value_ = value.flatten().detach().numpy()
@@ -114,6 +120,7 @@ def train(train_nodes, model, data_memory, g, node_features,G):
             rank.append(i+1)
         elif value_[i]==value_[i-1]:
             rank.append(rank[-1])
+
     return ken_pre2, all_data_loss2, test_ls[-1],test_loss,rank,model,pre_sort,node_rank_pre,prediction_I_with_node
 
 def load_train_net(j):
@@ -139,12 +146,19 @@ def load_train_net(j):
     data_memory = [list(data.loc[i]) for i in range(len(data))]
     return G,data_memory
 
+# R² 计算函数
+def r_squared(y_true, y_pred):
+    ss_total = torch.sum((y_true - torch.mean(y_true)) ** 2)  # 总体均方和
+    ss_residual = torch.sum((y_true - y_pred) ** 2)            # 残差均方和
+    r2 = 1 - (ss_residual / ss_total)                           # R²计算公式
+    return r2.item()  # 返回标量
+
 if __name__=='__main__':
     num_heads = 8
     num_layer = 3
     num_out_heads = 1
     heads = ([num_heads] * (num_layer - 1)) + [num_out_heads]
-    gat_para = dict([["in_dim", 10], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
+    gat_para = dict([["in_dim", 5], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
                      ["activation", "elu"], ["bias", True], ["dropout", 0.1]])
     gatnet_para = dict([["out_dim", 1], ["hidden_dim", 32], ["activation", nn.ReLU()]])
     gatv2 = GATv3Net(gatnet_para, gat_para)
@@ -176,8 +190,9 @@ if __name__=='__main__':
         data_memory_list.append(data_memory)
         g = dgl.from_networkx(G)
         g_list.append(g)
-        node_features_ = get_dgl_g_input(G)
-        node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+        node_features = get_dgl_g_input_test(G)
+        # node_features_ = get_dgl_g_input(G)
+        # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
         node_features_list.append(node_features)
     num_epochs = 500
     lr = 0.001
@@ -196,6 +211,7 @@ if __name__=='__main__':
         nodes = [x[0] for x in data_train]
         labels = [x[1] for x in data_train]
         value = model(g,node_features)
+
         y = torch.cat([value[node].unsqueeze(1) for node in nodes], 0)
         train_labels = torch.tensor(labels).reshape(-1,1)
         l=loss(torch.log(y),torch.log(train_labels))
@@ -213,7 +229,9 @@ if __name__=='__main__':
         optimizer.zero_grad()
         l.backward()
         optimizer.step()
-        print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1])
+        r2_value = r_squared(train_labels, y)
+
+        print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1], 'r2:%s,' % r2_value)
     plt.plot(list(range(len(train_ls))),train_ls)
     plt.show()
-    torch.save(model,'ALGE_B.pth')
+    torch.save(model,'ALGE_B_5features.pth')

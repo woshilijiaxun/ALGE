@@ -139,4 +139,5 @@ def al_model(G):
         InforG_.remove_nodes_from([node]+neighbor)
         if len(InforG_)==0:
             break
+    print(Representative)
     return Representative

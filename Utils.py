@@ -25,11 +25,11 @@ def get_dgl_g_input(G0):
     input = torch.ones(len(G), 11)
     for i in G.nodes():
         input[i, 0] = G.degree()[i]
-        input[i, 1] = sum([G.degree()[j] for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1)
-        input[i, 2] = sum([nx.clustering(G, j) for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1)
+        input[i, 1] = sum([G.degree()[j] for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1)  # 节点的邻居的平均度数
+        input[i, 2] = sum([nx.clustering(G, j) for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1) # 节点邻居的平均聚类系数
         egonet = G.subgraph(list(G.neighbors(i)) + [i])
         input[i, 3] = len(egonet.edges())
-        input[i, 4] = sum([G.degree()[j] for j in egonet.nodes()]) - 2 * input[i, 3]
+        input[i, 4] = sum([G.degree()[j] for j in egonet.nodes()]) - 2 * input[i, 3]   #计算自我网络中所有节点的度数之和，减去自我网络中的两倍边数。
     for l in [1, 2, 3]:
         for i in G.nodes():
             ball = get_neigbors(G, i, l)
@@ -49,7 +49,34 @@ def get_dgl_g_input(G0):
         if max(input[:, i]) != 0:
             input[:, i] = input[:, i] / max(input[:, i])
     return input
-
+def get_dgl_g_input_test(G0):
+    G = copy.deepcopy(G0)
+    input = torch.ones(len(G), 5)
+    for i in G.nodes():
+        input[i, 0] = G.degree()[i]
+        input[i, 1] = sum([G.degree()[j] for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1)  # 节点的邻居的平均度数
+        input[i, 2] = sum([nx.clustering(G, j) for j in list(G.neighbors(i))]) / max(len(list(G.neighbors(i))), 1) # 节点邻居的平均聚类系数
+    #     egonet = G.subgraph(list(G.neighbors(i)) + [i])
+    #     input[i, 3] = len(egonet.edges())
+    #     #input[i, 4] = sum([G.degree()[j] for j in egonet.nodes()]) - 2 * input[i, 3]   #计算自我网络中所有节点的度数之和，减去自我网络中的两倍边数。
+    # for l in [1, 2]:
+    #     for i in G.nodes():
+    #         ball = get_neigbors(G, i, l)
+    #         input[i, 4 + l - 1] = (G.degree()[i] - 1) * sum([G.degree()[j] - 1 for j in ball[l]])
+    v = nx.voterank(G)
+    votescore = dict()
+    for i in list(G.nodes()): votescore[i] = 0
+    for i in range(len(v)):
+        votescore[v[i]] = len(G) - i
+    e = nx.eigenvector_centrality(G, max_iter=1000)
+    k = nx.core_number(G)
+    for i in G.nodes():
+        input[i, 3] = e[i]
+        input[i, 4] = k[i]
+    for i in range(len(input[0])):
+        if max(input[:, i]) != 0:
+            input[:, i] = input[:, i] / max(input[:, i])
+    return input
 
 def IC_simulation(p, g, set):
     g = copy.deepcopy(g)
