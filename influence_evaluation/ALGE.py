@@ -14,7 +14,7 @@ import torch
 import torch.nn as nn
 import warnings
 from influence_evaluation.Model import GATv3Net
-from Utils import get_dgl_g_input, get_dgl_g_input_test
+from Utils import get_dgl_g_input, get_dgl_g_input_test,GraphSAGE
 from influence_evaluation.Active_learning import al_model
 warnings.filterwarnings('ignore')
 
@@ -22,9 +22,9 @@ def ALGE_C(G,data_memory):
     model = torch.load('..\\influence_evaluation\\ALGE_B_5features.pth')
     gatv3_ALGE_sample_sets = al_model(G)
     g = dgl.from_networkx(G)
-    node_features = get_dgl_g_input_test(G)
-    # node_features_ = get_dgl_g_input(G)
-    # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    #node_features = get_dgl_g_input_test(G)
+    node_features_ = get_dgl_g_input(G)
+    node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
     for d in data_memory: d[0] = int(d[0])
     simu_I = data_memory.copy()
     simu_I.sort(key=lambda x: x[1], reverse=True)
@@ -157,12 +157,12 @@ if __name__=='__main__':
     num_heads = 8
     num_layer = 3
     num_out_heads = 1
-    heads = ([num_heads] * (num_layer - 1)) + [num_out_heads]
-    gat_para = dict([["in_dim", 5], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
+    heads = ([num_heads] * (num_layer - 1)) + [num_out_heads]           #[8,8,1]
+    gat_para = dict([["in_dim", 10], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
                      ["activation", "elu"], ["bias", True], ["dropout", 0.1]])
     gatnet_para = dict([["out_dim", 1], ["hidden_dim", 32], ["activation", nn.ReLU()]])
-    gatv2 = GATv3Net(gatnet_para, gat_para)
-
+    #gatv2 = GATv3Net(gatnet_para, gat_para)
+    gatv2 = GraphSAGE()
     # Edge = pd.read_csv('..\\dataset\\synthetic\\train_1000_4.csv')
     # u = list(Edge['u'])
     # v = list(Edge['v'])
@@ -194,6 +194,16 @@ if __name__=='__main__':
         # node_features_ = get_dgl_g_input(G)
         # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
         node_features_list.append(node_features)
+
+    # with open('networks.txt','w') as f:
+    #     for j in range(50):
+    #         nodes = len(G_list[j].nodes())
+    #         edge = G_list[j].number_of_edges()
+    #         avg_degree = 2 * edge / nodes
+    #         f.write(f'{nodes} {edge} {avg_degree}\n')
+
+
+
     num_epochs = 500
     lr = 0.001
     model = gatv2
@@ -215,16 +225,16 @@ if __name__=='__main__':
         y = torch.cat([value[node].unsqueeze(1) for node in nodes], 0)
         train_labels = torch.tensor(labels).reshape(-1,1)
         l=loss(torch.log(y),torch.log(train_labels))
-        if l!=l:
-            model.fc1.layer[0].reset_parameters()
-            model.fc1.layer[1].reset_parameters()
-            model.fc1.layer[2].reset_parameters()
-            model.fc1.linear_layer[0].reset_parameters()
-            model.fc1.linear_layer[1].reset_parameters()
-            model.fc1.linear_layer[2].reset_parameters()
-            model.fc2.reset_parameters()
-            model.fc3.reset_parameters()
-            continue
+        # if l!=l:
+        #     model.fc1.layer[0].reset_parameters()
+        #     model.fc1.layer[1].reset_parameters()
+        #     model.fc1.layer[2].reset_parameters()
+        #     model.fc1.linear_layer[0].reset_parameters()
+        #     model.fc1.linear_layer[1].reset_parameters()
+        #     model.fc1.linear_layer[2].reset_parameters()
+        #     model.fc2.reset_parameters()
+        #     model.fc3.reset_parameters()
+        #     continue
         train_ls.append(l.detach().numpy())
         optimizer.zero_grad()
         l.backward()
@@ -234,4 +244,4 @@ if __name__=='__main__':
         print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1], 'r2:%s,' % r2_value)
     plt.plot(list(range(len(train_ls))),train_ls)
     plt.show()
-    torch.save(model,'ALGE_B_5features.pth')
+    torch.save(model,'GraphSAGE.pth')

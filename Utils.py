@@ -6,8 +6,8 @@ import torch.nn as nn
 import random as rd
 import numpy as np
 import pandas as pd
-
-
+import torch.nn.functional as F
+from dgl.nn.pytorch import  SAGEConv
 def get_neigbors(g, node, depth):
     output = {}
     layers = dict(nx.bfs_successors(g, source=node, depth_limit=depth))
@@ -39,7 +39,7 @@ def get_dgl_g_input(G0):
     for i in list(G.nodes()): votescore[i] = 0
     for i in range(len(v)):
         votescore[v[i]] = len(G) - i
-    e = nx.eigenvector_centrality(G, max_iter=1000)
+    e = nx.eigenvector_centrality(G, max_iter=2000)
     k = nx.core_number(G)
     for i in G.nodes():
         input[i, 8] = votescore[i]
@@ -68,7 +68,7 @@ def get_dgl_g_input_test(G0):
     for i in list(G.nodes()): votescore[i] = 0
     for i in range(len(v)):
         votescore[v[i]] = len(G) - i
-    e = nx.eigenvector_centrality(G, max_iter=1000)
+    e = nx.eigenvector_centrality(G, max_iter=2000)
     k = nx.core_number(G)
     for i in G.nodes():
         input[i, 3] = e[i]
@@ -77,6 +77,47 @@ def get_dgl_g_input_test(G0):
         if max(input[:, i]) != 0:
             input[:, i] = input[:, i] / max(input[:, i])
     return input
+
+def load_multilayer_sir_labels(path,total_nodes_num,total_layers):
+    data ={}
+    with open(path,'r') as text:
+        for line in text:
+            vertices = line.strip().split(' ')
+            layer = int(vertices[0])  # 网络层
+            node = int(vertices[1])  # 节点
+            label = float(vertices[2])  # 值
+            if layer not in data:
+                data[layer] = {}
+            data[layer][node] = label
+
+
+    # 初始化每个节点的总和
+    node_sums = {node: 0 for node in range(1, total_nodes_num + 1)}
+
+    # 累加每个节点在所有层的值
+    for layer, nodes in data.items():
+        for node in range(1, total_nodes_num + 1):
+            node_sums[node] += nodes.get(node, 0)  # 缺失节点补 0
+
+    # 计算每个节点的平均值
+    node_averages = {node: total / total_layers for node, total in node_sums.items()}
+    node_averages = dict(sorted(node_averages.items(), key=lambda x:x[1],reverse=True))
+    return node_averages
+
+def cal_average_sir(data,total_layers,total_nodes_num):
+    # 初始化每个节点的总和
+    node_sums = {node: 0 for node in range(1, total_nodes_num + 1)}
+
+    # 累加每个节点在所有层的值
+    for layer, nodes in data.items():
+        for node in range(1, total_nodes_num + 1):
+            node_sums[node] += nodes.get(node, 0)  # 缺失节点补 0
+
+
+    # 计算每个节点的平均值
+    node_averages = {node: total / total_layers for node, total in node_sums.items()}
+    node_averages = dict(sorted(node_averages.items(), key=lambda x: x[1], reverse=True))
+    return node_averages
 
 def IC_simulation(p, g, set):
     g = copy.deepcopy(g)
@@ -176,21 +217,21 @@ class LSTMModel(nn.Module):
         return l2_out
 
 
-def embedding_(G):
-    p = nx.degree_centrality(G)# degree centrality
-    q = H_index(G)
-    r = nx.core_number(G)
-    p = list(p.values())
-    q = list(q.values())
-    r = list(r.values())
-    p = [x/max(p) for x in p]
-    q = [x/max(q) for x in q]
-    r = [x/max(r) for x in r]
-    fmat = [torch.Tensor([p[i],q[i],r[i]]).reshape(1,3) for i in range(len(G))]
-    embedding = torch.concat(fmat)
-    return embedding
-
-
+# def embedding_(G):
+#     p = nx.degree_centrality(G)# degree centrality
+#     q = H_index(G)
+#     r = nx.core_number(G)
+#     p = list(p.values())
+#     q = list(q.values())
+#     r = list(r.values())
+#     p = [x/max(p) for x in p]
+#     q = [x/max(q) for x in q]
+#     r = [x/max(r) for x in r]
+#     fmat = [torch.Tensor([p[i],q[i],r[i]]).reshape(1,3) for i in range(len(G))]
+#     embedding = torch.concat(fmat)
+#     return embedding
+#
+#
 def H_index(g, node_set=-1):
     if node_set == -1:
         nodes = list(g.nodes())
@@ -214,6 +255,39 @@ def H_index(g, node_set=-1):
                 break
         H = y - 1
     return H
+
+
+def calculate_h_index(G,node):
+    degrees = [G.degree(neighbor) for neighbor in G.neighbors(node)]
+    degrees.sort(reverse=True)
+
+    h_index = 0
+    for i, degree in enumerate(degrees, 1):
+        if degree >= i:
+            h_index = i
+        else:
+            break
+    return h_index
+
+# 为图 G 中的每个节点计算 h-index，并返回结果字典
+def calculate_all_h_indices(G):
+    h_indices = {node: calculate_h_index(G, node) for node in G.nodes()}
+    return h_indices
+
+def embedding_(G):
+    p = nx.degree_centrality(G)# degree centrality
+    q = calculate_all_h_indices(G)
+    r = nx.core_number(G)
+    p = list(p.values())
+    q = list(q.values())
+    r = list(r.values())
+
+    p = [x/max(p) for x in p]
+    q = [x/max(q) for x in q]
+    r = [x/max(r) for x in r]
+    fmat = [torch.Tensor([p[i],q[i],r[i]]).reshape(1,3) for i in range(len(G))]
+    embedding = torch.concat(fmat)
+    return embedding
 
 
 def load_csv_net_gcc(name):
@@ -248,3 +322,78 @@ def cal_betac(G):
     betac = d_ / (d2_ - d_)
     return betac
     return G,pos
+
+
+def load_multilayer_graph(path):
+    # 创建一个动态扩展的多层网络列表
+    G = []
+    with open(path, 'r') as text:
+        for line in text:
+            vertices = line.strip().split(' ')
+            if len(vertices) != 4:
+                raise ValueError(f"Invalid line format: {line}")
+
+            layer = int(vertices[0])  # 网络层
+            source = int(vertices[1])  # 源节点
+            target = int(vertices[2])  # 目标节点
+            weight = int(vertices[3])  # 权重
+
+            # 动态扩展图列表
+            while len(G) < layer:
+                G.append(nx.Graph())
+
+            # 添加边并存储权重
+            G[layer - 1].add_edge(source, target, weight=weight)
+
+    # 移除自环
+    for graph in G:
+        graph.remove_edges_from(nx.selfloop_edges(graph))
+
+    # 返回多层网络和实际的层数
+    return G, len(G)
+
+class GraphSAGE(nn.Module):
+    def __init__(self):
+        super(GraphSAGE, self).__init__()
+        self.gcn1 = SAGEConv(5, 32, aggregator_type="lstm")
+        self.gcn2 = SAGEConv(32, 32, aggregator_type="lstm")
+
+        # Linear layers
+        self.fc1 = nn.Linear(32, 16)
+        self.fc2 = nn.Linear(16, 1)
+        self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
+
+        # Activation function
+        # activation_functions = {
+        #     "relu": nn.ReLU(),
+        #     "tanh": nn.Tanh(),
+        #     "sigmoid": nn.Sigmoid(),
+        #     "elu": nn.ELU(),
+        #     "LeakyReLU": nn.LeakyReLU()
+        # }
+        self.activation = nn.LeakyReLU()
+
+    def forward(self, graphs, node_features):
+        gcn_outputs = []
+        graphs = [graphs]
+        node_features = [node_features]
+        # 针对每个网络图独立使用GCN处理节点特征
+        for i, g in enumerate(graphs):
+            x = self.gcn1(g, node_features[i])  # GCN输出节点特征
+            x = F.relu(x)
+            x = self.gcn2(g, x)
+            x = F.relu(x)
+            gcn_outputs.append(x)
+        combined_features = torch.stack(gcn_outputs, dim=0)  # Shape: [L, num_nodes, gat_out_dim]
+        # print('combined_features',combined_features.shape)
+        x = torch.mean(combined_features, dim=0)  # 或者使用 max 进行池化
+        x = self.fc1(x)
+        x = self.activation(x)
+        x = self.fc2(x)
+        return x
+
+    def reset_parameters(self):
+        self.gcn1.reset_parameters()
+        self.gcn2.reset_parameters()
+        self.fc1.reset_parameters()
+        self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
