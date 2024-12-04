@@ -15,23 +15,28 @@ import torch.nn as nn
 import warnings
 from influence_evaluation.Model import GATv3Net
 from Utils import get_dgl_g_input, get_dgl_g_input_test,GraphSAGE
-from influence_evaluation.Active_learning import al_model
+from influence_evaluation.Active_learning import al_model, sample_nodes
 warnings.filterwarnings('ignore')
+from influence_evaluation.SAGEConv_GAT_Model import CombinedModel
 
 def ALGE_C(G,data_memory):
+
     model = torch.load('..\\influence_evaluation\\ALGE_B_5features.pth')
-    gatv3_ALGE_sample_sets = al_model(G)
+
+
+    gatv3_ALGE_sample_sets = sample_nodes(G)
     g = dgl.from_networkx(G)
-    #node_features = get_dgl_g_input_test(G)
-    node_features_ = get_dgl_g_input(G)
-    node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    node_features = get_dgl_g_input_test(G)
+    # node_features_ = get_dgl_g_input(G)
+    # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
     for d in data_memory: d[0] = int(d[0])
     simu_I = data_memory.copy()
     simu_I.sort(key=lambda x: x[1], reverse=True)
     model.train()
     train_nodes = gatv3_ALGE_sample_sets
     ken_ALGE_C, all_ls_F, test_ls_F,test_ls,rank_C,model,pre_sort2,node_rank_C,pre_I_with_node = train(train_nodes, model, data_memory, g, node_features,G)
-    return ken_ALGE_C,rank_C,pre_sort2,node_rank_C,pre_I_with_node,train_nodes
+    #return ken_ALGE_C,rank_C,pre_sort2,node_rank_C,pre_I_with_node,train_nodes
+    return pre_I_with_node
 
 def calculate_ken(G,pre_gat,data_memory,train_nodes=[],n=0):
     nodes_list = list(G.nodes())
@@ -158,11 +163,16 @@ if __name__=='__main__':
     num_layer = 3
     num_out_heads = 1
     heads = ([num_heads] * (num_layer - 1)) + [num_out_heads]           #[8,8,1]
-    gat_para = dict([["in_dim", 10], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
+    gat_para = dict([["in_dim",5], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
                      ["activation", "elu"], ["bias", True], ["dropout", 0.1]])
     gatnet_para = dict([["out_dim", 1], ["hidden_dim", 32], ["activation", nn.ReLU()]])
     #gatv2 = GATv3Net(gatnet_para, gat_para)
-    gatv2 = GraphSAGE()
+    #gatv2 = GraphSAGE()
+
+    gatv2 = CombinedModel(gatnet_para,gat_para)
+
+
+
     # Edge = pd.read_csv('..\\dataset\\synthetic\\train_1000_4.csv')
     # u = list(Edge['u'])
     # v = list(Edge['v'])
@@ -225,6 +235,8 @@ if __name__=='__main__':
         y = torch.cat([value[node].unsqueeze(1) for node in nodes], 0)
         train_labels = torch.tensor(labels).reshape(-1,1)
         l=loss(torch.log(y),torch.log(train_labels))
+        if l!=l:
+            model.reset_parameters()
         # if l!=l:
         #     model.fc1.layer[0].reset_parameters()
         #     model.fc1.layer[1].reset_parameters()
@@ -244,4 +256,4 @@ if __name__=='__main__':
         print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1], 'r2:%s,' % r2_value)
     plt.plot(list(range(len(train_ls))),train_ls)
     plt.show()
-    torch.save(model,'GraphSAGE.pth')
+    torch.save(model,'SAGE_GAT_5.pth')

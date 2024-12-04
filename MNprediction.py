@@ -3,7 +3,8 @@ import networkx as nx
 import dgl
 import torch
 from scipy.stats import kendalltau
-
+from influence_evaluation.ALGE import ALGE_C
+import influence_evaluation.Model
 def GLSTM(path,nodes_num):
     model = torch.load('influence_evaluation/GLSTM.pth')
     Gs, total_layers = load_multilayer_graph(path)
@@ -106,13 +107,13 @@ def k_shell(path,nodes_num):
 
 if __name__ == '__main__':
     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
-    model = torch.load('influence_evaluation/GraphSAGE.pth')
+    model = torch.load('influence_evaluation/ALGE_B_5features.pth')
 
     nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
                                          'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
                                          'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
                                          'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
-    path = 'MNdata/cKM-Physicians-Innovation_multiplex.edges'
+    path = 'MNdata/cS-Aarhus_multiplex.edges'
     Gs, total_layers = load_multilayer_graph(path)
     multiplex_network = path.split('/')[1].split('.')[0]
 
@@ -140,15 +141,20 @@ if __name__ == '__main__':
     sir_dict = load_multilayer_sir_labels(network_name,nodes_num ,total_layers)
     sir_list = [key for key in sir_dict.keys()]
     print('sir_dict',sir_dict)
+    data_memory = [[key,value] for key,value in sir_dict.items()]
+
     node_rank_simu = list(range(0, len(sir_list)))
 
     g_list = [dgl.from_networkx(Gs[i]) for i in range(total_layers)]
 
     pre_sir_dict = {}
     for i in range(total_layers):
-        model.eval()
-        with torch.no_grad():
-            predictions = model(g_list[i], node_feature_lsit[i])
+        # model.eval()
+        # with torch.no_grad():
+        #     predictions = model(g_list[i], node_feature_lsit[i])
+        predictions = ALGE_C(Gs[i],data_memory)
+        print('1111111111111111',predictions)
+
         predictions = predictions.tolist()
         # 提取节点及影响力值
         nodes_list = list(Gs[i].nodes())

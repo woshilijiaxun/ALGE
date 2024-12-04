@@ -63,11 +63,7 @@ def get_dgl_g_input_test(G0):
     #     for i in G.nodes():
     #         ball = get_neigbors(G, i, l)
     #         input[i, 4 + l - 1] = (G.degree()[i] - 1) * sum([G.degree()[j] - 1 for j in ball[l]])
-    v = nx.voterank(G)
-    votescore = dict()
-    for i in list(G.nodes()): votescore[i] = 0
-    for i in range(len(v)):
-        votescore[v[i]] = len(G) - i
+
     e = nx.eigenvector_centrality(G, max_iter=2000)
     k = nx.core_number(G)
     for i in G.nodes():
@@ -397,3 +393,4 @@ class GraphSAGE(nn.Module):
         self.gcn2.reset_parameters()
         self.fc1.reset_parameters()
         self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
+

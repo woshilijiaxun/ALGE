@@ -141,3 +141,151 @@ def al_model(G):
             break
     print(Representative)
     return Representative
+
+
+class CycleRatioCalculator:
+    def __init__(self, graph):
+        """
+        初始化周期比计算器
+        :param graph: networkx.Graph 对象
+        """
+        self.Mygraph = graph.copy()
+        self.DEF_IMPOSSLEN = self.Mygraph.number_of_nodes() + 1  # Impossible simple cycle length
+        self.SmallestCycles = set()
+        self.NodeGirth = {}
+        self.SmallestCyclesOfNodes = {}
+        self.Coreness = nx.core_number(self.Mygraph)
+        self.CycleRatio = {}
+        self.CycLenDict = {}
+        self._preprocess_graph()
+
+    def _preprocess_graph(self):
+        """初始化图的节点属性并移除低度数节点。"""
+        removeNodes = set()
+        for node in self.Mygraph.nodes():
+            self.SmallestCyclesOfNodes[node] = set()
+            self.CycleRatio[node] = 0
+            if self.Mygraph.degree(node) <= 1 or self.Coreness[node] <= 1:
+                self.NodeGirth[node] = 0
+                removeNodes.add(node)
+            else:
+                self.NodeGirth[node] = self.DEF_IMPOSSLEN
+
+        self.Mygraph.remove_nodes_from(removeNodes)
+        for i in range(3, self.Mygraph.number_of_nodes() + 2):
+            self.CycLenDict[i] = 0
+
+    def _my_all_shortest_paths(self, G, source, target):
+        """找到图中两个节点之间的所有最短路径。"""
+        pred = nx.predecessor(G, source)
+        if target not in pred:
+            raise nx.NetworkXNoPath(
+                f"Target {target} cannot be reached from given sources"
+            )
+        sources = {source}
+        seen = {target}
+        stack = [[target, 0]]
+        top = 0
+        while top >= 0:
+            node, i = stack[top]
+            if node in sources:
+                yield [p for p, n in reversed(stack[: top + 1])]
+            if len(pred[node]) > i:
+                stack[top][1] = i + 1
+                next_node = pred[node][i]
+                if next_node in seen:
+                    continue
+                else:
+                    seen.add(next_node)
+                top += 1
+                if top == len(stack):
+                    stack.append([next_node, 0])
+                else:
+                    stack[top][:] = [next_node, 0]
+            else:
+                seen.discard(node)
+                top -= 1
+
+    def get_smallest_cycles(self):
+        """找到图中的所有最小环。"""
+        NodeList = list(self.Mygraph.nodes())
+        NodeList.sort()
+
+        # Step 1: 找到三角形环
+        for ix in NodeList[:-2]:
+            if self.NodeGirth[ix] == 0:
+                continue
+            for jx in NodeList[NodeList.index(ix) + 1: -1]:
+                if self.NodeGirth[jx] == 0:
+                    continue
+                if self.Mygraph.has_edge(ix, jx):
+                    for kx in NodeList[NodeList.index(jx) + 1:]:
+                        if self.NodeGirth[kx] == 0:
+                            continue
+                        if self.Mygraph.has_edge(kx, ix) and self.Mygraph.has_edge(kx, jx):
+                            self.SmallestCycles.add(tuple(sorted([ix, jx, kx])))
+                            for node in [ix, jx, kx]:
+                                self.NodeGirth[node] = 3
+
+        # Step 2: 找到其他环
+        ResiNodeList = [
+            node for node in NodeList if self.NodeGirth[node] == self.DEF_IMPOSSLEN
+        ]
+        visitedNodes = {node: set() for node in ResiNodeList}
+
+        for nod in ResiNodeList:
+            for nei in list(self.Mygraph.neighbors(nod)):
+                if not nei in visitedNodes:
+                    visitedNodes[nei] = set()
+                if nod not in visitedNodes[nei]:
+                    visitedNodes[nod].add(nei)
+                    visitedNodes[nei].add(nod)
+                    self.Mygraph.remove_edge(nod, nei)
+                    if nx.has_path(self.Mygraph, nod, nei):
+                        for path in self._my_all_shortest_paths(self.Mygraph, nod, nei):
+                            path_len = len(path)
+                            self.SmallestCycles.add(tuple(sorted(path)))
+                            for node in path:
+                                if self.NodeGirth[node] > path_len:
+                                    self.NodeGirth[node] = path_len
+                    self.Mygraph.add_edge(nod, nei)
+
+    def calculate_cycle_ratios(self):
+        """计算每个节点的周期比。"""
+        for cyc in self.SmallestCycles:
+            len_cyc = len(cyc)
+            self.CycLenDict[len_cyc] += 1
+            for node in cyc:
+                self.SmallestCyclesOfNodes[node].add(cyc)
+
+        for node, small_cycles in self.SmallestCyclesOfNodes.items():
+            if not small_cycles:
+                continue
+            cycle_neighbors = set()
+            NeiOccurTimes = {}
+            for cyc in small_cycles:
+                for n in cyc:
+                    NeiOccurTimes[n] = NeiOccurTimes.get(n, 0) + 1
+                cycle_neighbors.update(cyc)
+            cycle_neighbors.discard(node)
+
+            sum_ratio = sum(
+                float(NeiOccurTimes[nei]) / len(self.SmallestCyclesOfNodes[nei])
+                for nei in cycle_neighbors
+            )
+            self.CycleRatio[node] = sum_ratio + 1
+
+    def get_cycle_ratios(self):
+        """主函数：计算周期比并排序输出。"""
+        self.get_smallest_cycles()
+        self.calculate_cycle_ratios()
+        return dict(sorted(self.CycleRatio.items(), key=lambda x: x[1], reverse=True))
+
+def sample_nodes(G):
+    cr_dict = CycleRatioCalculator(G).get_cycle_ratios()
+    cr_list = [key for key in cr_dict.keys()]
+    nodes_num = nx.number_of_nodes(G)
+    n = int(nodes_num * 0.05)
+    if n < 1: n=1
+    cr_list_n = cr_list[:n]
+    return cr_list_n
