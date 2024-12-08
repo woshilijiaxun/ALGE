@@ -3,6 +3,7 @@ import networkx as nx
 import dgl
 import torch
 from scipy.stats import kendalltau
+
 from influence_evaluation.ALGE import ALGE_C
 import influence_evaluation.Model
 def GLSTM(path,nodes_num):
@@ -103,17 +104,24 @@ def k_shell(path,nodes_num):
     k = kendalltau(node_rank_simu, node_rank_p)
     return k[0]
 
+def convert_sir(sir_dict, mapping):
+    dic = {}
+    for node, id in mapping.items():
+        dic[id] = sir_dict[node]
+    dic = dict(sorted(dic.items(),key=lambda x:x[1],reverse=True))
+    data_memory = [[k,v] for k,v in dic.items()]
+    return data_memory
+
 
 
 if __name__ == '__main__':
     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
-    model = torch.load('influence_evaluation/ALGE_B_5features.pth')
-
+    model = torch.load('influence_evaluation/GraphSAGE.pth')
     nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
                                          'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
                                          'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
                                          'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
-    path = 'MNdata/cS-Aarhus_multiplex.edges'
+    path = 'MNdata/humanHIV1_genetic_multiplex.edges'
     Gs, total_layers = load_multilayer_graph(path)
     multiplex_network = path.split('/')[1].split('.')[0]
 
@@ -131,7 +139,7 @@ if __name__ == '__main__':
         # node_features_ = get_dgl_g_input(Gs[i])
         # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
         node_feature_lsit.append(node_features)
-
+    print(maps)
 
 
 
@@ -141,7 +149,7 @@ if __name__ == '__main__':
     sir_dict = load_multilayer_sir_labels(network_name,nodes_num ,total_layers)
     sir_list = [key for key in sir_dict.keys()]
     print('sir_dict',sir_dict)
-    data_memory = [[key,value] for key,value in sir_dict.items()]
+    #data_memory = [[key,value] for key,value in sir_dict.items()]
 
     node_rank_simu = list(range(0, len(sir_list)))
 
@@ -152,6 +160,9 @@ if __name__ == '__main__':
         # model.eval()
         # with torch.no_grad():
         #     predictions = model(g_list[i], node_feature_lsit[i])
+        data_memory = convert_sir(sir_dict,maps[i])
+
+
         predictions = ALGE_C(Gs[i],data_memory)
         print('1111111111111111',predictions)
 

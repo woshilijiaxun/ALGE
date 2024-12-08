@@ -20,11 +20,11 @@ warnings.filterwarnings('ignore')
 from influence_evaluation.SAGEConv_GAT_Model import CombinedModel
 
 def ALGE_C(G,data_memory):
-
-    model = torch.load('..\\influence_evaluation\\ALGE_B_5features.pth')
-
+    model = torch.load('influence_evaluation/GraphSAGE.pth')
 
     gatv3_ALGE_sample_sets = sample_nodes(G)
+    #gatv3_ALGE_sample_sets = al_model(G)
+
     g = dgl.from_networkx(G)
     node_features = get_dgl_g_input_test(G)
     # node_features_ = get_dgl_g_input(G)
@@ -101,9 +101,10 @@ def train(train_nodes, model, data_memory, g, node_features,G):
     pre_gat = model(g, node_features)
     model.eval()
     value = model(g, node_features)
-    nodes_list = list(G.nodes())
-    prediction_I = value.detach().numpy()
-    prediction_I_with_node = [[nodes_list[i], prediction_I[i][0]] for i in range(len(prediction_I))]
+    prediction = value
+    # nodes_list = list(G.nodes())
+    # prediction_I = value.detach().numpy()
+    # prediction_I_with_node = [[nodes_list[i], prediction_I[i][0]] for i in range(len(prediction_I))]
     value_ = value.flatten().detach().numpy()
     value_ = sorted(value_, reverse=True)
     rank=[1]
@@ -126,7 +127,7 @@ def train(train_nodes, model, data_memory, g, node_features,G):
         elif value_[i]==value_[i-1]:
             rank.append(rank[-1])
 
-    return ken_pre2, all_data_loss2, test_ls[-1],test_loss,rank,model,pre_sort,node_rank_pre,prediction_I_with_node
+    return ken_pre2, all_data_loss2, test_ls[-1],test_loss,rank,model,pre_sort,node_rank_pre,prediction
 
 def load_train_net(j):
     type = 'Ba'

@@ -103,7 +103,7 @@ class InfluenceCalculator:
         recovered_nodes = [node for node in nodes if state[node] == 'R']
         return len(recovered_nodes)
 
-    def calculate_average_influence(self, beta, source_node, experiments=100, iterations_per_experiment=100):
+    def calculate_average_influence(self, beta, source_node, experiments=500, iterations_per_experiment=100):
         """
         计算节点的平均影响度量
         """
@@ -141,48 +141,79 @@ class InfluenceCalculator:
     #             transmission_capacity.append(len(infected_nodes) + len(recovered_nodes))
     #     return transmission_capacity[:30]  # 返回传染能力列表的前30个元素
 import pickle
+
+def process_network(index, name1, name2, path):
+    """每个网络的并行任务"""
+    try:
+        # 1. 读取网络
+        G_er = load_graph(path + name1 + str(index) + '.txt')
+        G_ws = load_graph(path + name2 + str(index) + '.txt')
+
+        # 2. 计算ER网络的影响力
+        b_er = threshhold(G_er) * 1.5
+        sir_dict_er = InfluenceCalculator(G_er).calculate_sorted_nodes(b_er)[-1]
+        with open(f'{path}{name1}{index}Influence_p.txt', 'w') as f:
+            for key, value in sir_dict_er.items():
+                f.write(f'{key} {value}\n')
+        print(f'er{index} success')
+
+        # 3. 计算WS网络的影响力
+        b_ws = threshhold(G_ws) * 1.5
+        sir_dict_ws = InfluenceCalculator(G_ws).calculate_sorted_nodes(b_ws)[-1]
+        with open(f'{path}{name2}{index}Influence_p.txt', 'w') as f:
+            for key, value in sir_dict_ws.items():
+                f.write(f'{key} {value}\n')
+        print(f'ws{index} success')
+
+    except Exception as e:
+        print(f"Error processing network {index}: {e}")
+
+import random
+import multiprocessing as mp
+
+import csv
+
+import os
+def txt_to_csv(txt_file, csv_file):
+    with open(txt_file, 'r') as infile:
+        # 读取txt文件中的每行
+        lines = infile.readlines()
+
+    with open(csv_file, 'w', newline='') as outfile:
+        writer = csv.writer(outfile)
+
+        # 写入CSV文件的表头
+        writer.writerow(['node','labels'])
+
+        # 遍历每条边，写入id, u, v
+        for i, line in enumerate(lines):
+            nodes = line.strip().split()
+            writer.writerow([nodes[0], nodes[1]])
+
+        # 删除原有的txt文件
+    os.remove(txt_file)
+    print(f'原文件 {txt_file} 已删除')
+
+
+
 if __name__ == '__main__':
+    # 网络名称和路径
+    name1 = 'SyntheticNetEr'
+    name2 = 'SyntheticNetWs'
+    path = './dataset/synthetic/'
+
+    txt_file = './dataset/synthetic/'  # 原始txt文件路径
+    csv_file = './dataset/synthetic/'  # 目标csv文件路径
+
+    for i in range(1):
 
 
-    # 读取 .pkl 文件
-    with open('influence_evaluation/ken_table.pkl', 'rb') as file:  # 'rb'表示以二进制方式读取
-        data = pickle.load(file)
-
-    print(data)
+        txt2 = txt_file + name2 + str(i) +'Influence_p'+ '.txt'
+        csv2 = csv_file + name2 + str(i)+'Influence_p' + '.csv'
 
 
-    model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
-    # 计算参数量
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters: {total_params}")
+        txt_to_csv(txt2, csv2)
 
-    G = load_graph(r'C:\Users\ADM\Desktop\CycleRatio-main\Dataset\NS_GC.txt')
-    g = dgl.from_networkx(G)
-    b = threshhold(G)
-    IC_dict = {}
+        print(f'转换完成，结果保存为 {csv2}')
 
 
-
-
-    _, _, IC_dict = InfluenceCalculator(G).calculate_sorted_nodes(b)
-
-    print('ic_dict',IC_dict)
-    IC_list = [key for key in IC_dict.keys()]
-    node_rank_simu = list(range(1, len(IC_list) + 1))
-
-    node_features_ = get_dgl_g_input(G)
-    node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
-
-    model.eval()
-    value = model(g, node_features)
-    nodes_list = list(G.nodes())
-    prediction_I = value.detach().numpy()
-    prediction_I_with_node = [[nodes_list[i], prediction_I[i][0]] for i in range(len(prediction_I))]
-    prediction_I_with_node.sort(key=lambda x: x[1], reverse=True)
-    pre_value = dict(prediction_I_with_node)
-    pre_sorted_node = [key for key in pre_value]
-    print('sorted_node', pre_sorted_node)
-
-    node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in IC_list]
-    k1 = kendalltau(node_rank_simu, node_rank_p)
-    print(k1[0])

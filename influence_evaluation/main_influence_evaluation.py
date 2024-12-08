@@ -158,10 +158,10 @@ def load_graph(path):
 
 if __name__=='__main__':
     #加载 .pkl 文件
-    with open('node_rank_record.pkl', "rb") as file:
-        data = pickle.load(file)
-    # 查看内容
-    print(data)
+    # with open('node_rank_record.pkl', "rb") as file:
+    #     data = pickle.load(file)
+    # # 查看内容
+    # print(data)
 
     # 影响力label路径，网络数据路径，所有网络名称
     inpath  = '..\\dataset\\real\\'

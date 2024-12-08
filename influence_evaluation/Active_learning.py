@@ -285,7 +285,7 @@ def sample_nodes(G):
     cr_dict = CycleRatioCalculator(G).get_cycle_ratios()
     cr_list = [key for key in cr_dict.keys()]
     nodes_num = nx.number_of_nodes(G)
-    n = int(nodes_num * 0.05)
+    n = int(nodes_num * 0.01)
     if n < 1: n=1
     cr_list_n = cr_list[:n]
     return cr_list_n
