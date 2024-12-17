@@ -366,27 +366,27 @@ if __name__=='__main__':
 
     torch.save(model, 'RCNN.pth')
 
-    # GLSTM-Train
-    embedding=embedding_(G)
-    # LSTM结构 LSTM 128,DENSE 32,REGRESSOR 1
-    loss = nn.L1Loss()
-    model=LSTMModel()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.002)  # 优化器
-    train_ls = []
-    for epoch in range(1000):
-        data_train=data_memory
-        nodes = [x[0] for x in data_train]
-        # features = torch.cat([node_features[i] for i in sample_index],dim=1)
-        labels = [x[1] for x in data_train]
-        value = model(embedding)
-        # y = torch.cat([value[node] for node in nodes]).reshape(-1,1)
-        # y = torch.cat([(torch.clamp(value[node], 1, float('inf'))).unsqueeze(1) for node in nodes], 0)
-        y = torch.cat([value[node].unsqueeze(1) for node in nodes], 0)
-        train_labels = torch.tensor(labels).reshape(-1, 1)
-        l = loss(y, train_labels)
-        train_ls.append(l.detach().numpy())
-        optimizer.zero_grad()
-        l.backward()
-        optimizer.step()
-        print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1])
-    torch.save(model,'GLSTM.pth')
+    # # GLSTM-Train
+    # embedding=embedding_(G)
+    # # LSTM结构 LSTM 128,DENSE 32,REGRESSOR 1
+    # loss = nn.L1Loss()
+    # model=LSTMModel()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.002)  # 优化器
+    # train_ls = []
+    # for epoch in range(1000):
+    #     data_train=data_memory
+    #     nodes = [x[0] for x in data_train]
+    #     # features = torch.cat([node_features[i] for i in sample_index],dim=1)
+    #     labels = [x[1] for x in data_train]
+    #     value = model(embedding)
+    #     # y = torch.cat([value[node] for node in nodes]).reshape(-1,1)
+    #     # y = torch.cat([(torch.clamp(value[node], 1, float('inf'))).unsqueeze(1) for node in nodes], 0)
+    #     y = torch.cat([value[node].unsqueeze(1) for node in nodes], 0)
+    #     train_labels = torch.tensor(labels).reshape(-1, 1)
+    #     l = loss(y, train_labels)
+    #     train_ls.append(l.detach().numpy())
+    #     optimizer.zero_grad()
+    #     l.backward()
+    #     optimizer.step()
+    #     print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1])
+    # torch.save(model,'GLSTM.pth')

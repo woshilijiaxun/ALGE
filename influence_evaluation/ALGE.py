@@ -17,11 +17,11 @@ from influence_evaluation.Model import GATv3Net
 from Utils import get_dgl_g_input, get_dgl_g_input_test,GraphSAGE
 from influence_evaluation.Active_learning import al_model, sample_nodes
 warnings.filterwarnings('ignore')
-from influence_evaluation.SAGEConv_GAT_Model import CombinedModel
+from influence_evaluation.SAGEConv_GAT_Model import SageGATModel,CombinedModel
 
-def ALGE_C(G,data_memory):
-    model = torch.load('influence_evaluation/GraphSAGE.pth')
-
+def ALGE_C(Model,G,data_memory):
+    #model = torch.load('influence_evaluation/GraphSAGE.pth')
+    model = Model
     gatv3_ALGE_sample_sets = sample_nodes(G)
     #gatv3_ALGE_sample_sets = al_model(G)
 
@@ -75,7 +75,7 @@ def train(train_nodes, model, data_memory, g, node_features,G):
     test_ls.append(test_loss)
     model.train()
     # 开始微调
-    for epoch in range(150):
+    for epoch in range(10):
         nodes = [x[0] for x in data_train]
         labels = [x[1] for x in data_train]
         value = model(g, node_features)
@@ -129,11 +129,21 @@ def train(train_nodes, model, data_memory, g, node_features,G):
 
     return ken_pre2, all_data_loss2, test_ls[-1],test_loss,rank,model,pre_sort,node_rank_pre,prediction
 
-def load_train_net(j):
-    type = 'Ba'
-    Edge = pd.read_csv('..\\dataset\\synthetic\\'+'SyntheticNet%s%s' % (type,j))
-    u = list(Edge['u'])
-    v = list(Edge['v'])
+def load_train_net(j,type):
+    #type = 'Ba'
+
+    if type == 'Er' or type == 'Ws' :
+        Edge = pd.read_csv(f'..\\dataset\\synthetic\\SyntheticNet{type}{j}.csv')
+        u = list(Edge['node1'])
+        v = list(Edge['node2'])
+    if type == 'Myba' or type == '100Myba' :
+        Edge = pd.read_csv(f'..\\dataset\\synthetic\\SyntheticNet{type}{j}.csv')
+        u = list(Edge['u'])
+        v = list(Edge['v'])
+    if type == 'Ba' :
+        Edge = pd.read_csv(f'..\\dataset\\synthetic\\SyntheticNet{type}{j}')
+        u = list(Edge['u'])
+        v = list(Edge['v'])
     edge_list = [(u[i], v[i]) for i in range(len(v))]
     G = nx.Graph()
     G.add_edges_from(edge_list)
@@ -160,8 +170,8 @@ def r_squared(y_true, y_pred):
     return r2.item()  # 返回标量
 
 if __name__=='__main__':
-    num_heads = 8
-    num_layer = 3
+    num_heads = 4
+    num_layer = 2
     num_out_heads = 1
     heads = ([num_heads] * (num_layer - 1)) + [num_out_heads]           #[8,8,1]
     gat_para = dict([["in_dim",5], ["out_dim", 32], ["embed_dim", 32], ["heads", heads], ["num_layer", num_layer],
@@ -171,6 +181,19 @@ if __name__=='__main__':
     #gatv2 = GraphSAGE()
 
     gatv2 = CombinedModel(gatnet_para,gat_para)
+    GATv3_P = {
+        "num_layer": 2,  # GAT 层数 (注意这里是两层 GAT)
+        "activation": "relu",  # 激活函数
+        "bias": True,  # 是否启用偏置
+        "heads": [4, 1]  # GAT 头数 (第 1 层 4 个头，第 2 层 1 个头)
+    }
+
+    SAGE_P = {
+        "in_dim": 5,
+        "hidden_dim": 32,
+        "out_dim": 32
+    }
+    #gatv2 = SageGATModel(GATv3_P,SAGE_P)
 
 
 
@@ -187,15 +210,29 @@ if __name__=='__main__':
     # data_memory = [list(data.loc[i]) for i in range(len(data))]
     # for x in data_memory: x[0] = int(x[0])
     # g = dgl.from_networkx(G)
-    # node_features_ = get_dgl_g_input(G)
-    # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    # node_features_ = get_dgl_g_input_test(G)
+    #node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
 
     G_list = []
     data_memory_list = []
     g_list = []
     node_features_list = []
+    # for j in range(50):
+    #     G,data_memory = load_train_net(j,'Ba')
+    #     G_list.append(G)
+    #     for x in data_memory: x[0] = int(x[0])
+    #     data_memory_list.append(data_memory)
+    #     g = dgl.from_networkx(G)
+    #     g_list.append(g)
+    #     node_features = get_dgl_g_input_test(G)
+    #     # node_features_ = get_dgl_g_input(G)
+    #     # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    #     node_features_list.append(node_features)
+
     for j in range(50):
-        G,data_memory = load_train_net(j)
+        G,data_memory = load_train_net(j,'Myba')
+
+        G = nx.convert_node_labels_to_integers(G)
         G_list.append(G)
         for x in data_memory: x[0] = int(x[0])
         data_memory_list.append(data_memory)
@@ -205,6 +242,19 @@ if __name__=='__main__':
         # node_features_ = get_dgl_g_input(G)
         # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
         node_features_list.append(node_features)
+    # for j in range(50):
+    #     G,data_memory = load_train_net(j,'Ws')
+    #
+    #     G = nx.convert_node_labels_to_integers(G)
+    #     G_list.append(G)
+    #     for x in data_memory: x[0] = int(x[0])
+    #     data_memory_list.append(data_memory)
+    #     g = dgl.from_networkx(G)
+    #     g_list.append(g)
+    #     node_features = get_dgl_g_input_test(G)
+    #     # node_features_ = get_dgl_g_input(G)
+    #     # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+    #     node_features_list.append(node_features)
 
     # with open('networks.txt','w') as f:
     #     for j in range(50):
@@ -216,14 +266,16 @@ if __name__=='__main__':
 
 
     num_epochs = 500
-    lr = 0.001
+    lr = 0.005
     model = gatv2
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss = nn.MSELoss()
     train_logls = []
     train_ls = []
     for epoch in range(num_epochs):
+        #j = rd.randint(0,49)
         j = rd.randint(0,49)
+
         G = G_list[j];data_memory=data_memory_list[j];g=g_list[j];node_features=node_features_list[j]
         nodes_list = list(G.nodes())
         nodes_list = [x[0] for x in data_memory]
@@ -257,4 +309,4 @@ if __name__=='__main__':
         print('epoch:%s, ' % epoch, 'train_ls:%s, ' % train_ls[-1], 'r2:%s,' % r2_value)
     plt.plot(list(range(len(train_ls))),train_ls)
     plt.show()
-    torch.save(model,'SAGE_GAT_5.pth')
+    torch.save(model,'GraphSAGE_GAT_2layer_4heads.pth')

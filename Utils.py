@@ -64,7 +64,7 @@ def get_dgl_g_input_test(G0):
     #         ball = get_neigbors(G, i, l)
     #         input[i, 4 + l - 1] = (G.degree()[i] - 1) * sum([G.degree()[j] - 1 for j in ball[l]])
 
-    e = nx.eigenvector_centrality(G, max_iter=2000)
+    e = nx.eigenvector_centrality(G, max_iter=10000)
     k = nx.core_number(G)
     for i in G.nodes():
         input[i, 3] = e[i]
@@ -98,7 +98,7 @@ def load_multilayer_sir_labels(path,total_nodes_num,total_layers):
     # 计算每个节点的平均值
     node_averages = {node: total / total_layers for node, total in node_sums.items()}
     node_averages = dict(sorted(node_averages.items(), key=lambda x:x[1],reverse=True))
-    return node_averages
+    return node_averages,data
 
 def cal_average_sir(data,total_layers,total_nodes_num):
     # 初始化每个节点的总和
@@ -192,6 +192,10 @@ def matrix_(G, L):
         Bu = Bu.toarray()
         Bu = torch.FloatTensor(Bu).reshape(1, 1, L, L)
         B.append(Bu)
+        # 如果 B 为空，提供一个默认值（全零张量）
+    if len(B) == 0:
+        default_tensor = torch.zeros(1, 1, L, L)  # 默认值（全零矩阵）
+        B.append(default_tensor)
     matrix = torch.concat(B)  # len(G)*1*len(egonet)*len(egonet)
     return matrix
 

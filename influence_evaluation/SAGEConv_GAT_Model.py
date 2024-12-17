@@ -151,3 +151,90 @@ class CombinedModel(nn.Module):
         self.sage_model.reset_parameters()
         self.fc1.reset_parameters()
         self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
+
+
+
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from dgl.nn.pytorch import SAGEConv, GATv2Conv
+
+device = torch.device("cpu")
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from dgl.nn.pytorch import SAGEConv, GATv2Conv
+
+
+class SageGATModel(nn.Module):
+    def __init__(self, GATv3_P, SAGE_P):
+        super(SageGATModel, self).__init__()
+        # 定义 SAGEConv 层参数
+        self.sage1 = SAGEConv(SAGE_P["in_dim"], SAGE_P["hidden_dim"], aggregator_type="lstm")
+        self.sage2 = SAGEConv(SAGE_P["hidden_dim"], SAGE_P["out_dim"], aggregator_type="lstm")
+
+        # 定义 GATv2Conv 层参数
+        self.K = 2  # 两层GAT
+        if GATv3_P["activation"] == "relu":
+            self.AF = nn.ReLU()
+        if GATv3_P["activation"] == "tanh":
+            self.AF = nn.Tanh()
+        if GATv3_P["activation"] == "sigmod":
+            self.AF = nn.Sigmoid()
+        if GATv3_P["activation"] == "elu":
+            self.AF = nn.ELU()
+
+        self.heads = GATv3_P['heads']
+        self.bias = GATv3_P["bias"]
+        self.layer = nn.ModuleList()
+        self.layer.append(GATv2Conv(SAGE_P["out_dim"], 32, num_heads=self.heads[0], bias=self.bias, activation=None, negative_slope=0.2, attn_drop=0.0))
+        self.layer.append(GATv2Conv(32 * self.heads[0], 32, num_heads=self.heads[1], bias=self.bias, activation=None, attn_drop=0.0))
+
+        self.linear_layer = nn.ModuleList()
+        for i in range(self.K):
+            self.linear_layer.append(nn.Linear(self.layer[i].fc_src.in_features, self.layer[i].fc_src.out_features))
+
+        # 最终预测的线性层
+        self.fc1 = nn.Linear(32, 16)
+        self.fc2 = nn.Linear(16, 1)
+        self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
+        self.activation = nn.LeakyReLU()
+
+    def forward(self, g, input_features):
+        # 通过 SAGEConv 处理
+        h = self.sage1(g, input_features)
+        h = F.relu(h)
+        h = self.sage2(g, h)
+        h = F.relu(h)
+
+        # 通过 GATv2Conv 处理
+        for i, layer in enumerate(self.layer):
+            if i != self.K - 1:
+                h = F.elu(layer(g, h).flatten(1) + self.linear_layer[i](h))
+            else:
+                h = layer(g, h).mean(1) + self.linear_layer[i](h)
+
+        # 通过线性层预测
+        h = self.fc1(h)
+        h = self.activation(h)
+        h = self.fc2(h)
+
+        return h
+
+    def reset_parameters(self):
+        # 重置 SAGEConv 层
+        self.sage1.reset_parameters()
+        self.sage2.reset_parameters()
+
+        # 重置 GATv2Conv 层
+        for layer in self.layer:
+            layer.reset_parameters()
+        for linear in self.linear_layer:
+            linear.reset_parameters()
+
+        # 重置最终线性层
+        self.fc1.reset_parameters()
+        self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
+
