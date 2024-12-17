@@ -58,7 +58,7 @@ def GLSTM(path,nodes_num):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0]
+    return k[0],pre_sorted_node
 
 def RCNN(path,nodes_num):
     L = 28
@@ -113,7 +113,7 @@ def RCNN(path,nodes_num):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0]
+    return k[0],pre_sorted_node
 
 
 
@@ -140,7 +140,7 @@ def DC(path,nodes_num):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0]
+    return k[0],pre_sorted_node
 
 def k_shell(path,nodes_num):
     Gs, total_layers = load_multilayer_graph(path)
@@ -161,7 +161,7 @@ def k_shell(path,nodes_num):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0]
+    return k[0],pre_sorted_node
 
 def convert_sir(sir_dict, mapping):
     dic = {}
@@ -208,8 +208,8 @@ if __name__ == '__main__':
 
 
 
-        t=1
-        network_name = 'MN_SIR_'+str(t)+'beitac/' + multiplex_network + '.txt'
+
+        network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
         print(network_name)
         nodes_num = nodes_num_from_multiplex_networks[multiplex_network]
         sir_dict,sir_dict_each_layer = load_multilayer_sir_labels(network_name,nodes_num ,total_layers)
@@ -259,15 +259,15 @@ if __name__ == '__main__':
 
 
 
-        k_glstm = round(GLSTM(path,nodes_num),4)
+        k_glstm,glstm_sorted_nodes = GLSTM(path,nodes_num)
 
 
-        k_dc = round(DC(path,nodes_num),4)
+        k_dc,dc_sorted_nodes = DC(path,nodes_num)
 
 
-        k_kshell = round(k_shell(path, nodes_num),4)
+        k_kshell,kshell_sorted_nodes = k_shell(path, nodes_num)
 
-        k_rcnn = round(RCNN(path,nodes_num),4)
+        k_rcnn ,rcnn_sorted_nodes= RCNN(path,nodes_num)
         k123 = {}
         print('pre',k[0])
         print('GLSTM', k_glstm)
@@ -276,6 +276,7 @@ if __name__ == '__main__':
         print('rcnn', k_rcnn)
         print(g_list)
         k123={'pre':k[0]}
-        Result[name] = {'DC':k_dc,'Kshell':k_kshell,'GLSTM':k_glstm,'rcnn':k_rcnn,'pre':round(k[0],4)}
-    with open('k_'+str(t)+'b.pkl', 'wb') as f:
+        Result[name] = {'DC':dc_sorted_nodes,'Kshell':kshell_sorted_nodes,'GLSTM':glstm_sorted_nodes,
+                        'rcnn':rcnn_sorted_nodes,'pre':pre_sorted_node}
+    with open('sorted_nodes.pkl', 'wb') as f:
         pickle.dump(Result, f)
