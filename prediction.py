@@ -53,46 +53,68 @@ def threshhold(G):
     beita = avg_degree / (average_squared_degree - avg_degree)
     return round(beita, 4)
 
-def IC_simulation(p, g, set):
-    g = copy.deepcopy(g)
-    # pos = nx.spring_layout(g)
-    for node in g.nodes():
-        g.nodes[node]['state'] = 0
 
-    if set == []:
-        for i in list(g.nodes()):
-            g.nodes[i]['state'] = 1 if random.random() < .01 else 0
-            if g.nodes[i]['state'] == 1:
-                set.append(i)
-    if set != []:
-        for i in list(g.nodes()):
-            if i in set:
-                g.nodes[i]['state'] = 1
+def IC_simulation(p, g, set, num_trials=1000):
+    total_influence = 0  # 用来累加每次实验的影响力
+    for _ in range(num_trials):
+        # 深拷贝图，避免修改原始图
+        g_copy = copy.deepcopy(g)
 
+        # 初始化所有节点的状态为0
+        for node in g_copy.nodes():
+            g_copy.nodes[node]['state'] = 0
 
-    for j in list(g.edges()):
-        g.edges[j]['p'] = p  # rd.uniform(0,1)
-    nextg = g.copy()
-    terminal = 0
-    # 仿真开始
-    while (terminal == 0):
-        for i in list(g.nodes()):
-            if g.nodes[i]['state'] == 1:
-                for j in g.neighbors(i):
-                    if g.nodes[j]['state'] == 0:
-                        nextg.nodes[j]['state'] = 1 if random.random() < nextg.edges[i, j]['p'] else 0
-                nextg.nodes[i]['state'] = 2
-        g = nextg
-        nextg = g
-        terminal = 1
-        for i in list(g.nodes()):
-            if g.nodes[i]['state'] == 1:
-                terminal = 0
-    count = -len(set)
-    for i in list(g.nodes()):
-        if g.nodes[i]['state'] == 2:
-            count += 1
-    return count
+        # 如果集合为空，随机选择节点作为初始激活节点
+        if not set:
+            for i in list(g_copy.nodes()):
+                g_copy.nodes[i]['state'] = 1 if random.random() < .01 else 0
+                if g_copy.nodes[i]['state'] == 1:
+                    set.append(i)
+
+        # 如果集合不为空，设置集合中的节点为激活状态
+        if set:
+            for i in list(g_copy.nodes()):
+                if i in set:
+                    g_copy.nodes[i]['state'] = 1
+
+        # 设置每条边的传播概率
+        for j in list(g_copy.edges()):
+            g_copy.edges[j]['p'] = p  # 传播概率为p
+
+        # 复制图用于更新状态
+        nextg = g_copy.copy()
+        terminal = 0
+
+        # 仿真开始
+        while terminal == 0:
+            for i in list(g_copy.nodes()):
+                if g_copy.nodes[i]['state'] == 1:  # 如果节点激活
+                    for j in g_copy.neighbors(i):
+                        if g_copy.nodes[j]['state'] == 0:
+                            nextg.nodes[j]['state'] = 1 if random.random() < nextg.edges[i, j]['p'] else 0
+                    nextg.nodes[i]['state'] = 2  # 节点变为已传播状态
+            g_copy = nextg
+            nextg = g_copy.copy()
+            terminal = 1
+            for i in list(g_copy.nodes()):
+                if g_copy.nodes[i]['state'] == 1:  # 还有未激活节点时继续仿真
+                    terminal = 0
+
+        # 统计最终的激活节点数
+        count = 0
+        for i in list(g_copy.nodes()):
+            if g_copy.nodes[i]['state'] == 2:  # 已传播的节点
+                count += 1
+
+        # 只将从初始集合中成功传播的节点计入影响力
+        successful_initial_nodes = sum(1 for node in set if node in g_copy.nodes() and g_copy.nodes[node]['state'] == 2)
+        count -= len(set)  # 从总影响力中减去初始激活节点的数量
+        count += successful_initial_nodes  # 加上成功传播的初始激活节点的数量
+
+        total_influence += count  # 累加本次实验的影响力
+
+    # 返回1000次实验的平均影响力
+    return total_influence / num_trials
 
 class InfluenceCalculator:
     def __init__(self, graph):
@@ -455,7 +477,7 @@ class InfluenceCalculator_multiprocess:
 
 
 import  os
-if __name__ == '__main__':
+#if __name__ == '__main__':
 
     # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980,
     #                                       'drosophila_genetic_multiplex': 8215,
@@ -493,11 +515,6 @@ if __name__ == '__main__':
     #                     print(f"已处理 {t} 个节点")
 
     # 存储数据的列表
-    import pickle
-    import pandas as pd
-    import openpyxl
-
-
 
     # # 存储数据的列表
     # data = []
@@ -608,3 +625,48 @@ if __name__ == '__main__':
 # # 保存网络
 # save_ba_networks_csv(ba_networks)
 #
+import multiprocessing
+# 并行化实验的主函数
+def parallel_ic_simulation(p, g, set, num_trials=1000, num_processes=None):
+    if num_processes is None:
+        num_processes = multiprocessing.cpu_count()  # 默认为系统的CPU核心数
+
+    # 切分实验任务，每个任务执行 num_trials // num_processes 次实验
+    trials_per_process = num_trials // num_processes
+
+    # 使用 multiprocessing.Pool 来并行化任务
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        results = pool.starmap(IC_simulation, [(p, g, set, trials_per_process) for _ in range(num_processes)])
+
+    # 计算所有实验结果的平均值
+    total_influence = sum(results)
+    average_influence = total_influence / num_processes
+    return average_influence
+
+import pickle
+if __name__ == '__main__':
+    # 读取pkl文件
+    file_path = 'sorted_nodes.pkl'  # 替换为你的pkl文件路径
+    with open(file_path, 'rb') as file:
+        data = pickle.load(file)
+
+    for n in [10,20,30,40,50]:
+        Result = {}
+        for network_name,v in data.items():
+            Gs,total_layer = load_multilayer_graph('./MNdata/'+network_name)
+            method_inf = {}
+            for method, nodes in v.items():
+                inf = 0
+                for i in range(total_layer):
+                    b = threshhold(Gs[i])
+                    inf += parallel_ic_simulation(b,Gs[i],nodes[:n])
+                method_inf[method] = inf
+            Result[network_name] = method_inf
+
+        with open('./top-k influence propagation/ic_top-'+str(n)+'.pkl', 'wb') as f:
+            pickle.dump(Result, f)
+
+
+
+
+

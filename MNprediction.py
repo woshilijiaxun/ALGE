@@ -175,6 +175,16 @@ def convert_sir(sir_dict, mapping):
 
 if __name__ == '__main__':
 
+    import pickle
+
+    # 读取pkl文件
+    file_path = 'sorted_nodes.pkl'  # 替换为你的pkl文件路径
+    with open(file_path, 'rb') as file:
+        data = pickle.load(file)
+
+    for k,v in data.items():
+        for method,nodes in v.items():
+            print(k,method,nodes[:10])
 
     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
