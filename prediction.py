@@ -644,27 +644,53 @@ def parallel_ic_simulation(p, g, set, num_trials=1000, num_processes=None):
     return average_influence
 
 import pickle
+import pandas as pd
+import openpyxl
 if __name__ == '__main__':
     # 读取pkl文件
-    file_path = 'sorted_nodes.pkl'  # 替换为你的pkl文件路径
-    with open(file_path, 'rb') as file:
-        data = pickle.load(file)
+    dict_list = []
+    for t in [10,20,30,40,50]:
+        file_path = './top-k influence propagation/ic_top-'+str(t)+'_1.5b.pkl'  # 替换为你的pkl文件路径
+        with open(file_path, 'rb') as file:
+            data = pickle.load(file)
+            dict_list.append(data)
+    # 使用 ExcelWriter 将多个字典写入同一个 sheet，并隔一行
+    with pd.ExcelWriter('ic_[10-50]——1.5b.xlsx', engine='openpyxl') as writer:
+        # 设置一个起始的行号
+        start_row = 0
 
-    for n in [10,20,30,40,50]:
-        Result = {}
-        for network_name,v in data.items():
-            Gs,total_layer = load_multilayer_graph('./MNdata/'+network_name)
-            method_inf = {}
-            for method, nodes in v.items():
-                inf = 0
-                for i in range(total_layer):
-                    b = threshhold(Gs[i])
-                    inf += parallel_ic_simulation(b,Gs[i],nodes[:n])
-                method_inf[method] = inf
-            Result[network_name] = method_inf
+        for idx, data in enumerate(dict_list):
+            # 将字典转换为 DataFrame，并转置
+            df = pd.DataFrame(data).T
 
-        with open('./top-k influence propagation/ic_top-'+str(n)+'.pkl', 'wb') as f:
-            pickle.dump(Result, f)
+            # 为每个字典数据写入 Excel 文件
+            df.to_excel(writer, sheet_name='Networks', startrow=start_row, index=True)
+
+            # 更新起始行号，使下一个字典数据隔一行
+            start_row += len(df) + 1  # 当前 DataFrame 的行数 + 1 行空白
+
+
+
+
+    # file_path = 'sorted_nodes.pkl'  # 替换为你的pkl文件路径
+    # with open(file_path, 'rb') as file:
+    #     data = pickle.load(file)
+    #
+    # for n in [10,20,30,40,50]:
+    #     Result = {}
+    #     for network_name,v in data.items():
+    #         Gs,total_layer = load_multilayer_graph('./MNdata/'+network_name)
+    #         method_inf = {}
+    #         for method, nodes in v.items():
+    #             inf = 0
+    #             for i in range(total_layer):
+    #                 b = threshhold(Gs[i])
+    #                 inf += parallel_ic_simulation(b,Gs[i],nodes[:n])
+    #             method_inf[method] = inf
+    #         Result[network_name] = method_inf
+    #
+    #     with open('./top-k influence propagation/ic_top-'+str(n)+'.pkl', 'wb') as f:
+    #         pickle.dump(Result, f)
 
 
 
