@@ -175,16 +175,6 @@ def convert_sir(sir_dict, mapping):
 
 if __name__ == '__main__':
 
-    import pickle
-
-    # 读取pkl文件
-    file_path = 'sorted_nodes.pkl'  # 替换为你的pkl文件路径
-    with open(file_path, 'rb') as file:
-        data = pickle.load(file)
-
-    for k,v in data.items():
-        for method,nodes in v.items():
-            print(k,method,nodes[:10])
 
     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
@@ -219,7 +209,7 @@ if __name__ == '__main__':
 
 
 
-        network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+        network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
         print(network_name)
         nodes_num = nodes_num_from_multiplex_networks[multiplex_network]
         sir_dict,sir_dict_each_layer = load_multilayer_sir_labels(network_name,nodes_num ,total_layers)
@@ -277,16 +267,17 @@ if __name__ == '__main__':
 
         k_kshell,kshell_sorted_nodes = k_shell(path, nodes_num)
 
-        k_rcnn ,rcnn_sorted_nodes= RCNN(path,nodes_num)
+        #k_rcnn ,rcnn_sorted_nodes= RCNN(path,nodes_num)
         k123 = {}
         print('pre',k[0])
         print('GLSTM', k_glstm)
         print('DC', k_dc)
         print('Kshell', k_kshell)
-        print('rcnn', k_rcnn)
+        #print('rcnn', k_rcnn)
         print(g_list)
-        k123={'pre':k[0]}
-        Result[name] = {'DC':dc_sorted_nodes,'Kshell':kshell_sorted_nodes,'GLSTM':glstm_sorted_nodes,
-                        'rcnn':rcnn_sorted_nodes,'pre':pre_sorted_node}
-    with open('sorted_nodes.pkl', 'wb') as f:
+        k123={'pre':pre_sorted_node}
+        #Result[name] = {'DC':dc_sorted_nodes,'Kshell':kshell_sorted_nodes,'GLSTM':glstm_sorted_nodes,
+                        # 'rcnn':rcnn_sorted_nodes,'pre':pre_sorted_node}
+        Result[name] = k123
+    with open('pre_1b_sorted_nodes.pkl', 'wb') as f:
         pickle.dump(Result, f)

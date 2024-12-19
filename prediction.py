@@ -649,13 +649,14 @@ import openpyxl
 if __name__ == '__main__':
     #读取pkl文件
     dict_list = []
-    for t in range(5,51,5):
-        file_path = './top-k influence propagation/ic_top-'+str(t)+'_1.0*b.pkl'  # 替换为你的pkl文件路径
+    for t in range(1):
+        #file_path = './/top-k influence propagation/5-10_2.0b/ic_top-'+str(t)+'_2.0*b.pkl'  # 替换为你的pkl文件路径
+        file_path = './ken_pre_1beitac.pkl'  # 替换为你的pkl文件路径
         with open(file_path, 'rb') as file:
             data = pickle.load(file)
             dict_list.append(data)
     # 使用 ExcelWriter 将多个字典写入同一个 sheet，并隔一行
-    with pd.ExcelWriter('ic_[5-50]——1.5b.xlsx', engine='openpyxl') as writer:
+    with pd.ExcelWriter('ken_pre.xlsx', engine='openpyxl') as writer:
         # 设置一个起始的行号
         start_row = 0
 
