@@ -175,7 +175,7 @@ def convert_sir(sir_dict, mapping):
 
 if __name__ == '__main__':
 
-
+    #123
     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
     nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
