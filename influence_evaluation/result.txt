@@ -1,0 +1,6 @@
+Jazz-0.8330 USAir-0.7086     NS-0.5639         5-features no al
+Jazz-0.8620 USAir-0.5796     NS-0.4886         5-features with al
+
+
+Jazz-0.0.8422 USAir-0.7094     NS-0.6688         10-features with al
+Jazz-0.8292 USAir-0.7590     NS-0.6781         10-features no al
