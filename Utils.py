@@ -398,3 +398,176 @@ class GraphSAGE(nn.Module):
         self.fc1.reset_parameters()
         self.fc2.weight = nn.init.normal_(self.fc2.weight, 0.1, 0.01)
 
+def load_graph(path):
+    G = nx.Graph()
+    with open(path, 'r') as text:
+        for line in text:
+            vertices = line.strip().split(' ')
+            source = int(vertices[0])
+            target = int(vertices[-1])
+            G.add_edge(source, target)
+    return G
+
+
+def power_t2(A, x0, tol=1e-6):
+    """
+    Power method for 3rd order tensors.
+
+    Parameters:
+        A (np.ndarray): 3rd order tensor describing the multilayer network, shape (n, n, m).
+        x0 (np.ndarray): Starting vector, shape (n,).
+        tol (float): Convergence tolerance. Default is 1e-5.
+
+    Returns:
+        x (np.ndarray): Node centralities vector, shape (n,).
+        y (np.ndarray): Layer centralities vector, shape (m,).
+        it (int): Number of iterations.
+    """
+    # Normalize the starting vector
+    x = x0 / np.linalg.norm(x0, 1)
+
+    # Compute initial y
+    y = np.einsum('ijt,i->jt', A, x)
+    y = np.einsum('jt,j->t', y, x)
+    y /= np.linalg.norm(y, 1)
+
+    rex, rey = 1, 1
+    it = 0
+    converged = False
+
+    while rex > tol or rey > tol:
+        x_old = x
+        y_old = y
+
+        # Update x
+        xx = np.einsum('ijt,j->it', A, x)
+        xx = np.einsum('it,t->i', xx, y)
+        xx = np.abs(xx)
+        x = xx / np.linalg.norm(xx, 1)
+
+        # Update y
+        yy = np.einsum('ijt,i->jt', A, x)
+        yy = np.einsum('jt,j->t', yy, x)
+        yy = np.abs(yy)
+        y = yy / np.linalg.norm(yy, 1)
+
+        # Compute relative differences
+        rex = np.linalg.norm(x_old - x) / np.linalg.norm(x)
+        rey = np.linalg.norm(y_old - y) / np.linalg.norm(y)
+
+        # Print convergence information
+        if not converged and rex <= tol:
+            print(f"\n * Node centrality vector converges first ({it + 1} iterations)")
+            converged = True
+        if not converged and rey <= tol:
+            print(f"\n * Layer centrality vector converges first ({it + 1} iterations)")
+            converged = True
+
+        it += 1
+        #print(it)
+        if it >= 1e+5:
+            break
+    return x, y, it
+
+
+def graphs_to_tensor(Gs, nodes_num):
+    """
+    将图列表的邻接矩阵填充到指定的节点数量大小。
+
+    参数:
+        Gs: list of networkx.Graph
+            图列表，其中每个图可能具有不同的节点数量。
+        nodes_num: int
+            填充后的目标节点数量。
+
+    返回:
+        padded_adj_matrices: numpy.ndarray
+            填充后的三维邻接矩阵张量，形状为 (len(Gs), nodes_num, nodes_num)。
+        sorted_node_orders: list of list
+            每个图的节点排序（保持原始图的节点顺序，填充的节点为 None）。
+    """
+    padded_adj_matrices = []
+    sorted_node_orders = []
+
+    for G in Gs:
+        # 获取当前图的节点列表并排序
+        nodes = sorted(G.nodes())
+        reference_nodes = [i for i in range(1,nodes_num+1)]  # 参考顺序
+        num_nodes = len(nodes)
+
+        # 记录节点的排序
+        sorted_node_orders.append(nodes + [None] * (nodes_num - num_nodes))
+        # 初始化零矩阵
+        adj_matrix = np.zeros((nodes_num, nodes_num))
+
+        # 创建节点映射：将节点值映射到参考顺序的索引
+        node_to_index = {node: idx for idx, node in enumerate(reference_nodes)}
+        # 填充邻接矩阵
+        for u, v, data in G.edges(data=True):
+            if u in node_to_index and v in node_to_index:  # 确保边的节点在参考节点列表中
+                i, j = node_to_index[u], node_to_index[v]
+                adj_matrix[i, j] = data.get("weight", 1)  # 填充权重，默认权重为1
+                adj_matrix[j, i] = data.get("weight", 1)  # 无向图需要对称填充
+
+        # 将填充的邻接矩阵添加到结果列表
+        padded_adj_matrices.append(adj_matrix)
+
+    # 转换为三维 numpy 张量
+    padded_adj_matrices = np.stack(padded_adj_matrices)
+    padded_adj_matrices_transposed = padded_adj_matrices.transpose(1, 2, 0)   #(N,N,L)
+
+
+    return padded_adj_matrices_transposed, sorted_node_orders
+
+
+def MultiPR(Gs, nodes_num):
+    A, sorted_node_orders = graphs_to_tensor(Gs, nodes_num)
+
+    x0 = np.ones(nodes_num)  # 初始化为全 1 的向量
+
+    #x0 = np.random.rand(nodes_num)
+    # 调用函数
+    x, y, it = power_t2(A, x0)
+    #print("Node centralities (x):", x)
+    print("Layer centralities (y):", y)
+    print("Iterations:", it)
+
+    # 将影响力与节点编号对应
+    node_influence = {i:x[i-1] for i in range(1,nodes_num+1)}
+    sorted_node_influence = dict(sorted(node_influence.items(), key=lambda x: x[1], reverse=True))
+    #print("Sorted node influence:", sorted_node_influence)
+
+    return sorted_node_influence, y
+
+def compute_distance_tensor(adj_tensor):
+    """
+    计算多层网络中节点之间的最短距离张量。
+
+    参数:
+        adj_tensor (np.ndarray): 多层网络的邻接矩阵张量，形状为 (N, N, L)。
+
+    返回:
+        distance_tensor (np.ndarray): 节点间距离张量，形状为 (N, N, L)。
+    """
+    N, _, L = adj_tensor.shape  # 获取节点数和层数
+    distance_tensor = np.zeros((N, N, L))  # 初始化距离张量
+
+    for l in range(L):
+        # 构建当前层的图
+        G = nx.from_numpy_array(adj_tensor[:, :, l])
+
+        # 使用 Floyd-Warshall 算法计算最短路径
+        length_dict = dict(nx.all_pairs_shortest_path_length(G))
+
+        # 将最短路径长度转换为矩阵形式
+        dist_matrix = np.zeros((N,N))
+        for i in length_dict:
+            for j in length_dict[i]:
+                dist_matrix[i, j] = length_dict[i][j]
+
+        # 保存当前层的距离矩阵
+        distance_tensor[:, :, l] = dist_matrix
+
+    return distance_tensor
+
+

@@ -54,7 +54,7 @@ def threshhold(G):
     return round(beita, 4)
 
 
-def IC_simulation(p, g, set, num_trials=1000):
+def IC_simulation(p, g, set, sorted_nodes,num_trials=1000):
     total_influence = 0  # 用来累加每次实验的影响力
     for _ in range(num_trials):
         # 深拷贝图，避免修改原始图
@@ -72,10 +72,10 @@ def IC_simulation(p, g, set, num_trials=1000):
                     set.append(i)
 
         # 如果集合不为空，设置集合中的节点为激活状态
-        if set:
-            for i in list(g_copy.nodes()):
-                if i in set:
-                    g_copy.nodes[i]['state'] = 1
+
+        for i in list(g_copy.nodes()):
+            if i in set :
+                g_copy.nodes[i]['state'] = 1
 
         # 设置每条边的传播概率
         for j in list(g_copy.edges()):
@@ -647,16 +647,17 @@ import pickle
 import pandas as pd
 import openpyxl
 if __name__ == '__main__':
-    #读取pkl文件
+    # #读取pkl文件
     dict_list = []
-    for t in range(1):
-        #file_path = './/top-k_influence-propagation/5-10_2.0b/ic_top-'+str(t)+'_2.0*b.pkl'  # 替换为你的pkl文件路径
-        file_path = './ken_pre_1beitac.pkl'  # 替换为你的pkl文件路径
+    for t in [t*0.01 for t in range(1,11)]:
+        #file_path = './top-k_influence-propagation/ic_1b_[0.01-0.1]/INF_top-'+str(t)+'_4b(0.01-0.1)_500num.pkl'  # 替换为你的pkl文件路径
+        file_path = './top-k_influence-propagation/f-e/INF_f-e_top-' + str(t) + '_4.5b(0.01-0.1)_500num.pkl'
+        #file_path = './graphsage_ken_.pkl'  # 替换为你的pkl文件路径
         with open(file_path, 'rb') as file:
             data = pickle.load(file)
             dict_list.append(data)
     # 使用 ExcelWriter 将多个字典写入同一个 sheet，并隔一行
-    with pd.ExcelWriter('ken_pre.xlsx', engine='openpyxl') as writer:
+    with pd.ExcelWriter('top-k_influence-propagation/f-e/INF_f-e_4.5b(0.01-0.1)_0.01-0.1_.xlsx', engine='openpyxl') as writer:
         # 设置一个起始的行号
         start_row = 0
 
