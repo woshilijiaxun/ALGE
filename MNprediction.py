@@ -310,7 +310,7 @@ if __name__ == '__main__':
 
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
 
-    path = 'MNdata/drosophila_genetic_multiplex.edges'
+    path = 'MNdata/cS-Aarhus_multiplex.edges'
     multiplex_network = path.split('/')[1].split('.')[0]
     nodes_num = nodes_num_from_multiplex_networks[multiplex_network]
 
