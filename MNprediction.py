@@ -177,7 +177,7 @@ def f_eigenvector_centrality(path,nodes_num):
     Gs, total_layers = load_multilayer_graph(path)
 
     multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+    network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
 
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
@@ -199,8 +199,9 @@ def  PRGC(path,nodes_num):
     nodes_inf_dict, layer_inf = MultiPR(Gs, nodes_num)   #获得节点中心性值和层中心性值, x={node:influence}, y=[]
     print('nid',nodes_inf_dict)
     print(len(list(nodes_inf_dict)))
-    distance_tensor = compute_distance_tensor(adj_matrix)
 
+
+    distance_tensor = compute_distance_tensor(adj_matrix)
     # 确保层重要性的形状匹配
     if distance_tensor.shape[2] != len(layer_inf):
         raise ValueError("层重要性列表的长度必须与张量的层数相等")
@@ -208,7 +209,7 @@ def  PRGC(path,nodes_num):
     weighted_distance = np.tensordot(distance_tensor, layer_inf, axes=([2], [0]))  # 将每层的节点距离乘上层重要性再加权求和
 
     """
-       计算节点的最终影响值，仅考虑二阶邻居。
+       计算节点的最终影响值，仅考虑二阶以内邻居。
 
        参数：
            weighted_distance (np.ndarray): 节点加权距离的二维矩阵，形状为 (N, N)。
@@ -222,8 +223,10 @@ def  PRGC(path,nodes_num):
     final_influence = {}
     #print(weighted_distance.shape)
     #print(np.sum((weighted_distance > 0) ))
+    combined_adj = np.sum(adj_matrix, axis=2)  # 综合所有层的信息，得到形状 (N, N)
+
     for i in range(num_nodes):
-        combined_adj = np.sum(adj_matrix, axis=2)  # 综合所有层的信息，得到形状 (N, N)
+
 
         first_order_neighbors = set(np.where(combined_adj[i] > 0)[0])
         # 找到一阶邻居
@@ -233,7 +236,7 @@ def  PRGC(path,nodes_num):
         for j in first_order_neighbors:
              if weighted_distance[i][j] > 0:  # 防止除以零
                 first_order_influence += (
-                        nodes_inf_dict.get(i, 0) * nodes_inf_dict.get(j, 0) /
+                        nodes_inf_dict.get(i+1, 0) * nodes_inf_dict.get(j+1, 0) /
                         (weighted_distance[i][j] ** 2)
                 )
         # 找到二阶邻居
@@ -246,22 +249,22 @@ def  PRGC(path,nodes_num):
 
         # 计算二阶邻居的影响
         second_order_influence = 0
-        for j in second_order_neighbors:
+        for k in second_order_neighbors:
             #if weighted_distance[i][j] > 0 :  # 防止除以零
                 second_order_influence += (
-                        nodes_inf_dict.get(i, 0) * nodes_inf_dict.get(j, 0) /
-                        (weighted_distance[i][j] ** 2)
+                        nodes_inf_dict.get(i+1, 0) * nodes_inf_dict.get(k+1, 0) /
+                        (weighted_distance[i][k] ** 2)
                 )
 
         # 存储最终影响值
-        final_influence[i] = first_order_influence + second_order_influence
+        final_influence[i+1] = first_order_influence + second_order_influence
 
-
+    print('keys',final_influence.keys())
     prgc_dict = dict(sorted(final_influence.items(),key=lambda x:x[1],reverse=True))
     print('pd',prgc_dict)
     print(len(list(prgc_dict)))
     multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+    network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
 
     sir_dict, _ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]

@@ -570,4 +570,3 @@ def compute_distance_tensor(adj_tensor):
 
     return distance_tensor
 
-
