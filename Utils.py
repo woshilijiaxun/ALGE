@@ -502,6 +502,7 @@ def graphs_to_tensor(Gs, nodes_num):
 
         # 创建节点映射：将节点值映射到参考顺序的索引
         node_to_index = {node: idx for idx, node in enumerate(reference_nodes)}
+
         # 填充邻接矩阵
         for u, v, data in G.edges(data=True):
             if u in node_to_index and v in node_to_index:  # 确保边的节点在参考节点列表中
@@ -567,6 +568,7 @@ def compute_distance_tensor(adj_tensor):
 
         # 保存当前层的距离矩阵
         distance_tensor[:, :, l] = dist_matrix
+
 
     return distance_tensor
 

@@ -207,7 +207,7 @@ def  PRGC(path,nodes_num):
         raise ValueError("层重要性列表的长度必须与张量的层数相等")
     # 逐层加权
     weighted_distance = np.tensordot(distance_tensor, layer_inf, axes=([2], [0]))  # 将每层的节点距离乘上层重要性再加权求和
-
+    print(weighted_distance)
     """
        计算节点的最终影响值，仅考虑二阶以内邻居。
 
@@ -249,12 +249,12 @@ def  PRGC(path,nodes_num):
 
         # 计算二阶邻居的影响
         second_order_influence = 0
-        for k in second_order_neighbors:
-            #if weighted_distance[i][j] > 0 :  # 防止除以零
-                second_order_influence += (
-                        nodes_inf_dict.get(i+1, 0) * nodes_inf_dict.get(k+1, 0) /
-                        (weighted_distance[i][k] ** 2)
-                )
+        # for k in second_order_neighbors:
+        #     #if weighted_distance[i][j] > 0 :  # 防止除以零
+        #         second_order_influence += (
+        #                 nodes_inf_dict.get(i+1, 0) * nodes_inf_dict.get(k+1, 0) /
+        #                 (weighted_distance[i][k] ** 2)
+        #         )
 
         # 存储最终影响值
         final_influence[i+1] = first_order_influence + second_order_influence
@@ -296,10 +296,10 @@ def convert_sir(sir_dict, mapping):
 
 if __name__ == '__main__':
 
-    # with open('prgc_ken.pkl','rb') as f:
-    #     data = pickle.load(f)
-    # for k,v in data.items():
-    #     print(k,v)
+    with open('f_eigenvector_ken.pkl','rb') as f:
+        data = pickle.load(f)
+    for k,v in data.items():
+        print(k,v)
     # print('-'*50)
     # with open('f_eigenvector_ken.pkl','rb') as f:
     #     data = pickle.load(f)
@@ -312,17 +312,26 @@ if __name__ == '__main__':
                                          'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
 
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
+    Result_k= {}
+    Result_sorted_nodes={}
+    for name in network:
+        #path = 'MNdata/drosophila_genetic_multiplex.edges'
+        path = 'MNdata/' + name
+        multiplex_network = path.split('/')[1].split('.')[0]
+        nodes_num = nodes_num_from_multiplex_networks[multiplex_network]
+        #prgc,prgc_sorted_nodes= PRGC(path,nodes_num)
+        f_k,f_eigenvector_sorted_node,f_eigenvector_dict,layer_inf= f_eigenvector_centrality(path,nodes_num)
+        #print(prgc,f_k)
+        Result_k[name] = f_k
+        Result_sorted_nodes[name] = f_eigenvector_sorted_node
 
-    path = 'MNdata/cS-Aarhus_multiplex.edges'
-    multiplex_network = path.split('/')[1].split('.')[0]
-    nodes_num = nodes_num_from_multiplex_networks[multiplex_network]
+    with open('f_eigenvector_ken.pkl', 'wb') as f:
+        pickle.dump(Result_k, f)
 
-    prgc,prgc_sorted_nodes= PRGC(path,nodes_num)
-    print(prgc)
+    with open('f_eigenvector_sorted_nodes.pkl', 'wb') as f:
+        pickle.dump(Result_sorted_nodes, f)
+        #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
-
-    # #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
-    #'arabidopsis_genetic_multiplex': 6980 'drosophila_genetic_multiplex': 8215
     nodes_num_from_multiplex_networks = {'cS-Aarhus_multiplex': 61, 'celegans_connectome_multiplex': 279,
                                          'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
                                          'hepatitusC_genetic_multiplex': 105,
