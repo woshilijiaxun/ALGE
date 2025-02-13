@@ -280,12 +280,33 @@ class CycleRatioCalculator:
         self.get_smallest_cycles()
         self.calculate_cycle_ratios()
         return dict(sorted(self.CycleRatio.items(), key=lambda x: x[1], reverse=True))
-
+import community
 def sample_nodes(G):
-    cr_dict = CycleRatioCalculator(G).get_cycle_ratios()
-    cr_list = [key for key in cr_dict.keys()]
-    nodes_num = nx.number_of_nodes(G)
-    n = int(nodes_num * 0.05)
-    if n < 1: n=1
-    cr_list_n = cr_list[:n]
-    return cr_list_n
+    # cr_dict = CycleRatioCalculator(G).get_cycle_ratios()
+    # cr_list = [key for key in cr_dict.keys()]
+    # nodes_num = nx.number_of_nodes(G)
+    # n = int(nodes_num * 0.05)
+    # if n < 1: n=1
+    # cr_list_n = cr_list[:n]
+    # return cr_list_n
+
+    # 应用Louvain算法
+    partition = community.best_partition(G)
+    # 返回每个社团中度中心性最高的节点
+    representative_nodes = []
+    for community_id in set(partition.values()):  # 遍历每个社团
+        # 获取社团中的节点
+        community_nodes = [node for node, com_id in partition.items() if com_id == community_id]
+
+        # 获取社团子图
+        subgraph = G.subgraph(community_nodes)
+
+        # 计算社团内节点的度中心性
+        degree_centrality = nx.degree_centrality(subgraph)
+
+        # 找到度中心性最高的节点
+        center_node = max(degree_centrality, key=degree_centrality.get)
+
+        print(f"社团{community_id}的度中心性最高的节点是: {center_node}，度中心性为: {degree_centrality[center_node]}")
+        representative_nodes.append(center_node)
+    return representative_nodes

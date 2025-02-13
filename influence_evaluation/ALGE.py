@@ -17,12 +17,16 @@ from influence_evaluation.Model import GATv3Net
 from Utils import get_dgl_g_input, get_dgl_g_input_test,GraphSAGE
 from influence_evaluation.Active_learning import al_model, sample_nodes
 warnings.filterwarnings('ignore')
-from influence_evaluation.SAGEConv_GAT_Model import SageGATModel,CombinedModel
+from influence_evaluation.SAGEConv_GAT_Model import CombinedModel
 
 def ALGE_C(Model,G,data_memory):
     #model = torch.load('influence_evaluation/GraphSAGE.pth')
     model = Model
     gatv3_ALGE_sample_sets = sample_nodes(G)
+    if len(gatv3_ALGE_sample_sets) == 0:
+        gatv3_ALGE_sample_sets =[rd.random.choice(list(G.nodes))]
+    print(gatv3_ALGE_sample_sets)
+    print('number of samples:',len(gatv3_ALGE_sample_sets))
     #gatv3_ALGE_sample_sets = al_model(G)
 
     g = dgl.from_networkx(G)
@@ -75,7 +79,7 @@ def train(train_nodes, model, data_memory, g, node_features,G):
     test_ls.append(test_loss)
     model.train()
     # 开始微调
-    for epoch in range(10):
+    for epoch in range(6):
         nodes = [x[0] for x in data_train]
         labels = [x[1] for x in data_train]
         value = model(g, node_features)
@@ -217,22 +221,8 @@ if __name__=='__main__':
     data_memory_list = []
     g_list = []
     node_features_list = []
-    # for j in range(50):
-    #     G,data_memory = load_train_net(j,'Ba')
-    #     G_list.append(G)
-    #     for x in data_memory: x[0] = int(x[0])
-    #     data_memory_list.append(data_memory)
-    #     g = dgl.from_networkx(G)
-    #     g_list.append(g)
-    #     node_features = get_dgl_g_input_test(G)
-    #     # node_features_ = get_dgl_g_input(G)
-    #     # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
-    #     node_features_list.append(node_features)
-
     for j in range(50):
-        G,data_memory = load_train_net(j,'Myba')
-
-        G = nx.convert_node_labels_to_integers(G)
+        G,data_memory = load_train_net(j,'Ba')
         G_list.append(G)
         for x in data_memory: x[0] = int(x[0])
         data_memory_list.append(data_memory)
@@ -242,19 +232,9 @@ if __name__=='__main__':
         # node_features_ = get_dgl_g_input(G)
         # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
         node_features_list.append(node_features)
-    # for j in range(50):
-    #     G,data_memory = load_train_net(j,'Ws')
-    #
-    #     G = nx.convert_node_labels_to_integers(G)
-    #     G_list.append(G)
-    #     for x in data_memory: x[0] = int(x[0])
-    #     data_memory_list.append(data_memory)
-    #     g = dgl.from_networkx(G)
-    #     g_list.append(g)
-    #     node_features = get_dgl_g_input_test(G)
-    #     # node_features_ = get_dgl_g_input(G)
-    #     # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
-    #     node_features_list.append(node_features)
+
+
+
 
     # with open('networks.txt','w') as f:
     #     for j in range(50):
