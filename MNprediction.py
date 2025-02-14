@@ -296,7 +296,10 @@ def convert_sir(sir_dict, mapping):
 
 
 if __name__ == '__main__':
-
+    with open('active_learning_ken.pkl','rb') as f:
+        data = pickle.load(f)
+    for k,v in data.items():
+        print(k,v)
     # with open('f_eigenvector_ken.pkl','rb') as f:
     #     data = pickle.load(f)
     # for k,v in data.items():
@@ -338,12 +341,12 @@ if __name__ == '__main__':
                                          'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
                                          'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
 
-    epoch_for_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
-                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215,
-                                         'hepatitusC_genetic_multiplex': 105,
-                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
-                                         'rattus_genetic_multiplex': 2640}
+    epoch_for_multiplex_networks = {'arabidopsis_genetic_multiplex': 10, 'celegans_connectome_multiplex': 3,
+                                         'celegans_genetic_multiplex': 10, 'cKM-Physicians-Innovation_multiplex': 20,
+                                         'cS-Aarhus_multiplex': 20, 'drosophila_genetic_multiplex': 5,
+                                         'hepatitusC_genetic_multiplex': 6,
+                                         'humanHIV1_genetic_multiplex': 15, 'lazega-Law-Firm_multiplex': 30,
+                                         'rattus_genetic_multiplex': 20}
 
     #path = 'MNdata/cS-Aarhus_multiplex.edges'
     #multiplex_network = path.split('/')[1].split('.')[0]
@@ -381,6 +384,9 @@ if __name__ == '__main__':
     Result = {}
     for name in network:
     #for _ in range(1):
+
+        epoch_num = epoch_for_multiplex_networks[name.split('.')[0]]
+        print(epoch_num)
         path = 'MNdata/' + name
         #path = 'MNdata/hepatitusC_genetic_multiplex.edges'
         Gs, total_layers = load_multilayer_graph(path)
@@ -428,7 +434,7 @@ if __name__ == '__main__':
 
                 data_memory = convert_sir(sir_dict_each_layer[i+1],maps[i])
 
-                predictions = ALGE_C(model,Gs[i],data_memory)
+                predictions = ALGE_C(model,Gs[i],data_memory,epoch_num)
 
                 #print('1111111111111111',predictions)
 

@@ -19,7 +19,7 @@ from influence_evaluation.Active_learning import al_model, sample_nodes
 warnings.filterwarnings('ignore')
 from influence_evaluation.SAGEConv_GAT_Model import CombinedModel
 
-def ALGE_C(Model,G,data_memory):
+def ALGE_C(Model,G,data_memory,epoch_num):
     #model = torch.load('influence_evaluation/GraphSAGE.pth')
     model = Model
     gatv3_ALGE_sample_sets = sample_nodes(G)
@@ -38,7 +38,7 @@ def ALGE_C(Model,G,data_memory):
     simu_I.sort(key=lambda x: x[1], reverse=True)
     model.train()
     train_nodes = gatv3_ALGE_sample_sets
-    ken_ALGE_C, all_ls_F, test_ls_F,test_ls,rank_C,model,pre_sort2,node_rank_C,pre_I_with_node = train(train_nodes, model, data_memory, g, node_features,G)
+    ken_ALGE_C, all_ls_F, test_ls_F,test_ls,rank_C,model,pre_sort2,node_rank_C,pre_I_with_node = train(train_nodes, model, data_memory, g, node_features,G,epoch_num)
     #return ken_ALGE_C,rank_C,pre_sort2,node_rank_C,pre_I_with_node,train_nodes
     return pre_I_with_node
 
@@ -66,7 +66,7 @@ def rmse(value,train_nodes, labels):
     y = torch.cat([value[node] for node in train_nodes]).reshape(-1,1)
     rmse = torch.sqrt(loss(y,labels))
     return rmse.item()
-def train(train_nodes, model, data_memory, g, node_features,G):
+def train(train_nodes, model, data_memory, g, node_features,G,epoch_num):
     data_train = [x for x in data_memory if x[0] in train_nodes]  # 训练集
     data_test = [x for x in data_memory if x[0] not in train_nodes]  # 测试
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)  # 优化器
@@ -79,7 +79,7 @@ def train(train_nodes, model, data_memory, g, node_features,G):
     test_ls.append(test_loss)
     model.train()
     # 开始微调
-    for epoch in range(6):
+    for epoch in range(epoch_num):
         nodes = [x[0] for x in data_train]
         labels = [x[1] for x in data_train]
         value = model(g, node_features)

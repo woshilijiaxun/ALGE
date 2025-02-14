@@ -1,3 +1,4 @@
+import community
 import networkx as nx
 from math import log
 import numpy as np
@@ -280,7 +281,9 @@ class CycleRatioCalculator:
         self.get_smallest_cycles()
         self.calculate_cycle_ratios()
         return dict(sorted(self.CycleRatio.items(), key=lambda x: x[1], reverse=True))
+
 import community
+
 def sample_nodes(G):
     # cr_dict = CycleRatioCalculator(G).get_cycle_ratios()
     # cr_list = [key for key in cr_dict.keys()]
