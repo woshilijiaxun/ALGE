@@ -338,6 +338,12 @@ if __name__ == '__main__':
                                          'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
                                          'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
 
+    epoch_for_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
+                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215,
+                                         'hepatitusC_genetic_multiplex': 105,
+                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
+                                         'rattus_genetic_multiplex': 2640}
 
     #path = 'MNdata/cS-Aarhus_multiplex.edges'
     #multiplex_network = path.split('/')[1].split('.')[0]
