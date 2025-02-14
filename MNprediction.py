@@ -333,11 +333,11 @@ if __name__ == '__main__':
     #     pickle.dump(Result_sorted_nodes, f)
     #     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
-    nodes_num_from_multiplex_networks = {'cS-Aarhus_multiplex': 61, 'celegans_connectome_multiplex': 279,
+    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
                                          'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-                                         'hepatitusC_genetic_multiplex': 105,
-                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
-                                         'rattus_genetic_multiplex': 2640, 'arabidopsis_genetic_multiplex': 6980,'drosophila_genetic_multiplex': 8215}
+                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
+                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
+
 
     #path = 'MNdata/cS-Aarhus_multiplex.edges'
     #multiplex_network = path.split('/')[1].split('.')[0]
@@ -368,38 +368,37 @@ if __name__ == '__main__':
     #
     # with open('f_eigenvector_layer_inf.pkl', 'wb') as f:
     #     pickle.dump(Result_layer, f)
-    ken = {}
-    for time in [0.5,0.75,1.25,1.5]:
-
-        network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
-        Result = {}
-        #for name in network:
-        for _ in range(1):
-            #path = 'MNdata/' + name
-            path = 'MNdata/hepatitusC_genetic_multiplex.edges'
-            Gs, total_layers = load_multilayer_graph(path)
-            multiplex_network = path.split('/')[1].split('.')[0]
-
-            node_feature_lsit = []
-            maps = []
-
-            for i in range(total_layers):            #将每层网络的节点映射到0-n，保存映射关系。模型预测后转换节点映射。
-                # 查找入度为0的节点
-                zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
-                Gs[i].remove_nodes_from(zero_degree_nodes)
-
-                mapping = {node: idx for idx, node in enumerate(Gs[i].nodes())}       #{node:id}
-                maps.append(mapping)
-                Gs[i]= nx.convert_node_labels_to_integers(Gs[i])
-
-                node_features = get_dgl_g_input_test(Gs[i])
-                # node_features_ = get_dgl_g_input(Gs[i])
-                # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
-                node_feature_lsit.append(node_features)
-            print(maps)
 
 
 
+    network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
+    Result = {}
+    for name in network:
+    #for _ in range(1):
+        path = 'MNdata/' + name
+        #path = 'MNdata/hepatitusC_genetic_multiplex.edges'
+        Gs, total_layers = load_multilayer_graph(path)
+        multiplex_network = path.split('/')[1].split('.')[0]
+
+        node_feature_lsit = []
+        maps = []
+
+        for i in range(total_layers):            #将每层网络的节点映射到0-n，保存映射关系。模型预测后转换节点映射。
+            # 查找入度为0的节点
+            zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
+            Gs[i].remove_nodes_from(zero_degree_nodes)
+
+            mapping = {node: idx for idx, node in enumerate(Gs[i].nodes())}       #{node:id}
+            maps.append(mapping)
+            Gs[i]= nx.convert_node_labels_to_integers(Gs[i])
+
+            node_features = get_dgl_g_input_test(Gs[i])
+            # node_features_ = get_dgl_g_input(Gs[i])
+            # node_features = torch.cat((node_features_[:, 0:8], node_features_[:, 9:11]), dim=1)
+            node_feature_lsit.append(node_features)
+        print(maps)
+        ken = {}
+        for time in [0.5, 0.75, 1.25, 1.5]:
 
            # network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
             network_name = 'MN_SIR_'+str(time)+'beitac/' + multiplex_network + '.txt'
@@ -478,4 +477,6 @@ if __name__ == '__main__':
         #     pickle.dump(Result, f)
 
             ken[time] = k[0]
-    print(ken)
+        Result[name] = ken
+    with open('active_learning_ken.pkl', 'wb') as f:
+        pickle.dump(Result, f)
