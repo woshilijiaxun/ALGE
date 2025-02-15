@@ -346,7 +346,7 @@ if __name__ == '__main__':
                                          'celegans_genetic_multiplex': 10, 'cKM-Physicians-Innovation_multiplex': 20,
                                          'cS-Aarhus_multiplex': 20, 'drosophila_genetic_multiplex': 5,
                                          'hepatitusC_genetic_multiplex': 6,
-                                         'humanHIV1_genetic_multiplex': 15, 'lazega-Law-Firm_multiplex': 1,
+                                         'humanHIV1_genetic_multiplex': 15, 'lazega-Law-Firm_multiplex': 5,
                                          'rattus_genetic_multiplex': 20}
 
     #path = 'MNdata/cS-Aarhus_multiplex.edges'
