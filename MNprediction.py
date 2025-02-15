@@ -296,7 +296,7 @@ def convert_sir(sir_dict, mapping):
 
 
 if __name__ == '__main__':
-    with open('active_learning_ken_network_Lazega-Law-Firm_Multiplex.pkl','rb') as f:
+    with open('active_learning_sorted_nodes.pkl','rb') as f:
         data = pickle.load(f)
     for k,v in data.items():
         print(k,v)
@@ -336,11 +336,11 @@ if __name__ == '__main__':
     #     pickle.dump(Result_sorted_nodes, f)
     #     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
-    # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
-    #                                      'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-    #                                      'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
-    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
-    nodes_num_from_multiplex_networks = {'lazega-Law-Firm_multiplex': 71}
+    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
+                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
+                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
+
 
     epoch_for_multiplex_networks = {'arabidopsis_genetic_multiplex': 10, 'celegans_connectome_multiplex': 3,
                                          'celegans_genetic_multiplex': 10, 'cKM-Physicians-Innovation_multiplex': 20,
@@ -383,6 +383,7 @@ if __name__ == '__main__':
 
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
     Result = {}
+    ken_result = {}
     for name in network:
     #for _ in range(1):
 
@@ -411,7 +412,7 @@ if __name__ == '__main__':
             node_feature_lsit.append(node_features)
         print(maps)
         ken = {}
-        for time in [0.5, 0.75, 1,1.25, 1.5]:
+        for time in [1]:
 
            # network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
             network_name = 'MN_SIR_'+str(time)+'beitac/' + multiplex_network + '.txt'
@@ -489,7 +490,9 @@ if __name__ == '__main__':
         # with open('graphsage_ken_.pkl', 'wb') as f:
         #     pickle.dump(Result, f)
 
-            ken[time] = k_dc
-        Result[name] = ken
-    with open('dc_ken.pkl', 'wb') as f:
+        ken_result[name] = k[0]
+        Result[name] = pre_sorted_node
+    with open('active_learning_sorted_nodes.pkl', 'wb') as f:
         pickle.dump(Result, f)
+    with open('active_learning_ken_b=1.pkl', 'wb') as f:
+        pickle.dump(ken_result, f)
