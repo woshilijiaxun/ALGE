@@ -126,7 +126,7 @@ def RCNN(path,nodes_num):
 
 
 
-def DC(path,nodes_num):
+def DC(path,nodes_num,NetworkName):
     Gs, total_layers = load_multilayer_graph(path)
     DegreeDict = {}
     for i in range(total_layers):
@@ -137,7 +137,7 @@ def DC(path,nodes_num):
         DegreeDict[i+1] = dc
 
     multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+    network_name = NetworkName
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
     node_rank_simu = list(range(0, len(sir_list)))
@@ -296,7 +296,7 @@ def convert_sir(sir_dict, mapping):
 
 
 if __name__ == '__main__':
-    with open('active_learning_ken.pkl','rb') as f:
+    with open('active_learning_ken_network_Lazega-Law-Firm_Multiplex.pkl','rb') as f:
         data = pickle.load(f)
     for k,v in data.items():
         print(k,v)
@@ -336,16 +336,17 @@ if __name__ == '__main__':
     #     pickle.dump(Result_sorted_nodes, f)
     #     #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
-    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
-                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
-                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
+    # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+    #                                      'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
+    #                                      'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
+    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
+    nodes_num_from_multiplex_networks = {'lazega-Law-Firm_multiplex': 71}
 
     epoch_for_multiplex_networks = {'arabidopsis_genetic_multiplex': 10, 'celegans_connectome_multiplex': 3,
                                          'celegans_genetic_multiplex': 10, 'cKM-Physicians-Innovation_multiplex': 20,
                                          'cS-Aarhus_multiplex': 20, 'drosophila_genetic_multiplex': 5,
                                          'hepatitusC_genetic_multiplex': 6,
-                                         'humanHIV1_genetic_multiplex': 15, 'lazega-Law-Firm_multiplex': 30,
+                                         'humanHIV1_genetic_multiplex': 15, 'lazega-Law-Firm_multiplex': 1,
                                          'rattus_genetic_multiplex': 20}
 
     #path = 'MNdata/cS-Aarhus_multiplex.edges'
@@ -410,7 +411,7 @@ if __name__ == '__main__':
             node_feature_lsit.append(node_features)
         print(maps)
         ken = {}
-        for time in [0.5, 0.75, 1.25, 1.5]:
+        for time in [0.5, 0.75, 1,1.25, 1.5]:
 
            # network_name = 'MN_SIR_1beitac/' + multiplex_network + '.txt'
             network_name = 'MN_SIR_'+str(time)+'beitac/' + multiplex_network + '.txt'
@@ -468,7 +469,7 @@ if __name__ == '__main__':
             k_glstm,glstm_sorted_nodes = GLSTM(path,nodes_num)
 
 
-            k_dc,dc_sorted_nodes = DC(path,nodes_num)
+            k_dc,dc_sorted_nodes = DC(path,nodes_num,network_name)
 
 
             k_kshell,kshell_sorted_nodes = k_shell(path, nodes_num)
@@ -488,7 +489,7 @@ if __name__ == '__main__':
         # with open('graphsage_ken_.pkl', 'wb') as f:
         #     pickle.dump(Result, f)
 
-            ken[time] = k[0]
+            ken[time] = k_dc
         Result[name] = ken
-    with open('active_learning_ken.pkl', 'wb') as f:
+    with open('dc_ken.pkl', 'wb') as f:
         pickle.dump(Result, f)
