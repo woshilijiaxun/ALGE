@@ -296,7 +296,7 @@ def convert_sir(sir_dict, mapping):
 
 
 if __name__ == '__main__':
-    with open('active_learning_sorted_nodes.pkl','rb') as f:
+    with open('prgc_ken.pkl','rb') as f:
         data = pickle.load(f)
     for k,v in data.items():
         print(k,v)
