@@ -1,7 +1,7 @@
 import openpyxl
 import pickle
 
-with open('active_learning_ken.pkl', 'rb') as f:
+with open('Ken_data/active_learning_ken.pkl', 'rb') as f:
     data = pickle.load(f)
 
 # 创建新的Excel工作簿
