@@ -651,13 +651,13 @@ if __name__ == '__main__':
     dict_list = []
     for t in [t*0.01 for t in range(1,11)]:
         #file_path = './top-k_influence-propagation/ic_1b_[0.01-0.1]/INF_top-'+str(t)+'_4b(0.01-0.1)_500num.pkl'  # 替换为你的pkl文件路径
-        file_path = './top-k_influence-propagation/f-e/INF_f-e_top-' + str(t) + '_4.5b(0.01-0.1)_500num.pkl'
+        file_path = './top-k_influence-propagation/MGNN-AL/INF_MGNN-AL_top-' + str(t) + '_b=5b(0.01-0.1)_500num.pkl'
         #file_path = './graphsage_ken_.pkl'  # 替换为你的pkl文件路径
         with open(file_path, 'rb') as file:
             data = pickle.load(file)
             dict_list.append(data)
     # 使用 ExcelWriter 将多个字典写入同一个 sheet，并隔一行
-    with pd.ExcelWriter('top-k_influence-propagation/f-e/INF_f-e_4.5b(0.01-0.1)_0.01-0.1_.xlsx', engine='openpyxl') as writer:
+    with pd.ExcelWriter('top-k_influence-propagation/MGNN-AL/INF_MGNN-AL_b=5b(0.01-0.1)_0.01-0.1_.xlsx', engine='openpyxl') as writer:
         # 设置一个起始的行号
         start_row = 0
 
