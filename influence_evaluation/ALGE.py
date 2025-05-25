@@ -244,7 +244,7 @@ if __name__=='__main__':
     #         f.write(f'{nodes} {edge} {avg_degree}\n')
 
 
-
+#123
     num_epochs = 500
     lr = 0.005
     model = gatv2
