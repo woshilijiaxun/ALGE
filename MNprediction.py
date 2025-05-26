@@ -370,7 +370,7 @@ def convert_sir(sir_dict, mapping):
 
 
 if __name__ == '__main__':
-    with open('Ken_data/f-e-AND-prgc_ken(0.5-1.5).pkl', 'rb') as f:
+    with open('node_ranking_dict.pkl', 'rb') as f:
         data = pickle.load(f)
     for k,v in data.items():
         print(k,v)
