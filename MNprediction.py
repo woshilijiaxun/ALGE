@@ -8,8 +8,85 @@ import pickle
 from influence_evaluation.ALGE import ALGE_C
 import influence_evaluation.Model
 import numpy as np
+import time
+class ED_method:
+    def __init__(self, graphs,num):
+        self.graphs = graphs
+        self.L = len(graphs)
+        self.node_list = [i for i in range(1,num+1)]
+        #self.N = len(self.node_list)
+        self.N = num
+        # 确保所有图都有 完整节点集
+        for G in self.graphs:
+            missing_nodes = set(self.node_list) - set(G.nodes())
+            G.add_nodes_from(missing_nodes)
 
-def GLSTM(path,nodes_num):
+
+
+    def compute_metrics(self):
+        con = {node: set() for node in self.node_list}
+        BC = [{node: 0 for node in self.node_list} for _ in range(self.L)]
+
+        # 计算单层BC
+        for alpha in range(self.L):
+            bc_dict = nx.betweenness_centrality(self.graphs[alpha], normalized=True)  # normalized=True 自动归一化
+            for node in self.node_list:
+                BC[alpha][node] = bc_dict.get(node, 0)  # 有些孤立点没值，补0
+
+        # 层间交互部分
+        for node in self.node_list:
+            for alpha in range(self.L):
+                for beta in range(self.L):
+                    if alpha != beta:
+                        D = BC[alpha][node] + BC[beta][node] + 1
+                        con[node].add(D)
+
+        # 熵计算 & 最终得分
+        result = {}
+
+        total_sum = np.sum([len(con[n]) + sum([np.sum(nx.to_numpy_array(self.graphs[a], nodelist=self.node_list)[self.node_list.index(n)]) for a in range(self.L)]) for n in self.node_list])
+
+        for node in self.node_list:
+            total_degree = 0
+            for alpha in range(self.L):
+                A = nx.to_numpy_array(self.graphs[alpha], nodelist=self.node_list)
+                total_degree += np.sum(A[self.node_list.index(node)])
+
+            p = (len(con[node]) + total_degree) / total_sum
+            entropy_value = p * np.log(p + 1e-10) *(-1)
+            result[node] = entropy_value
+
+        return result
+
+def ED(path,nodes_num,network_name):
+    start_time = time.time()
+    Gs, total_layers = load_multilayer_graph(path)
+
+    ED_dict = ED_method(Gs, nodes_num).compute_metrics()
+    ED_sorted_dict = dict(sorted(ED_dict.items(), key=lambda x: x[1], reverse=True))
+    print(ED_sorted_dict)
+
+
+
+
+    network_name = './dataset/real-influence/MN_SIR_' + str(t) + 'beitac/' + multiplex_network + '.txt'
+
+    sir_dict, _ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
+    sir_list = [key for key in sir_dict.keys()]
+    node_rank_simu = list(range(0, len(sir_list)))
+
+    pre_sorted_node = [key for key in ED_sorted_dict.keys()]
+    node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
+    k = kendalltau(node_rank_simu, node_rank_p)
+
+    print(k[0])
+    print('ed_list', pre_sorted_node)
+    print('sir_list', sir_list)
+    end_time = time.time()
+
+    print('耗时：', end_time - start_time)
+
+def GLSTM(path,nodes_num,network_name):
     model = torch.load('influence_evaluation/GLSTM_1k_4.pth')
     Gs, total_layers = load_multilayer_graph(path)
     node_feature_lsit = []
@@ -26,8 +103,7 @@ def GLSTM(path,nodes_num):
         node_feature = embedding_(Gs[i])
         node_feature_lsit.append(node_feature)
 
-    multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
     node_rank_simu = list(range(0, len(sir_list)))
@@ -65,7 +141,7 @@ def GLSTM(path,nodes_num):
     k = kendalltau(node_rank_simu, node_rank_p)
     return k[0],pre_sorted_node
 
-def RCNN(path,nodes_num):
+def RCNN(path,nodes_num,network_name):
     L = 28
     model = torch.load('influence_evaluation/RCNN.pth')
     Gs, total_layers = load_multilayer_graph(path)
@@ -83,8 +159,7 @@ def RCNN(path,nodes_num):
         node_feature = matrix_(Gs[i],L=L)
         node_feature_lsit.append(node_feature)
 
-    multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+
     sir_dict, _ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
     node_rank_simu = list(range(0, len(sir_list)))
@@ -136,7 +211,7 @@ def DC(path,nodes_num,NetworkName):
         dc = nx.degree_centrality(Gs[i])
         DegreeDict[i+1] = dc
 
-    multiplex_network = path.split('/')[1].split('.')[0]
+    multiplex_network = path.split('.')[-2].split('/')[-1]
     network_name = NetworkName
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
@@ -151,7 +226,7 @@ def DC(path,nodes_num,NetworkName):
 
     return k[0],pre_sorted_node
 
-def k_shell(path,nodes_num):
+def k_shell(path,nodes_num,network_name):
     Gs, total_layers = load_multilayer_graph(path)
     KshellDict = {}
     for i in range(total_layers):
@@ -161,8 +236,7 @@ def k_shell(path,nodes_num):
         kshell = nx.core_number(Gs[i])
         KshellDict[i + 1] = kshell
 
-    multiplex_network = path.split('/')[1].split('.')[0]
-    network_name = 'MN_SIR_beitac/' + multiplex_network + '.txt'
+
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
     node_rank_simu = list(range(0, len(sir_list)))
