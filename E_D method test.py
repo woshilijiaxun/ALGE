@@ -445,15 +445,16 @@ def MGNN_AL(path,nodes_num,NetworkName):
 if __name__ == '__main__':
 
 
-    # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
-    #                                      'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-    #                                      'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
-    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
-    nodes_num_from_multiplex_networks = {'lazega-Law-Firm_multiplex': 71}
+    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
+                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
+                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
+
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
     Result_k= {}
 
     for name in network:
+        print(f'正在处理{name}')
         #path = 'MNdata/drosophila_genetic_multiplex.edges'
         relative_path = 'MNdata/' + name
         PATH = './dataset/real_multiplex_networks/MNdata/' + name
