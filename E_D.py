@@ -61,8 +61,10 @@ class ED_method:
 def ED(path,nodes_num,network_name):
 
     Gs, total_layers = load_multilayer_graph(path)
-
+    stime = time.time()
     ED_dict = ED_method(Gs, nodes_num).compute_metrics()
+    estime = time.time()
+    total_time = estime-stime
     ED_sorted_dict = dict(sorted(ED_dict.items(), key=lambda x: x[1], reverse=True))
     print(ED_sorted_dict)
 
@@ -85,7 +87,7 @@ def ED(path,nodes_num,network_name):
 
 
 
-    return k[0],ED_sorted_dict
+    return k[0],ED_sorted_dict,total_time
 
 def GLSTM(path,nodes_num,network_name):
     model = torch.load('influence_evaluation/GLSTM_1k_4.pth')
@@ -456,7 +458,7 @@ if __name__ == '__main__':
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
     Result_sorted_dict= {}
     Result_kendall= {}
-
+    Result_runningtime = {}
     for name in network:
         print(f'正在处理{name}')
         #path = 'MNdata/drosophila_genetic_multiplex.edges'
@@ -468,6 +470,7 @@ if __name__ == '__main__':
 
         nodes_ranking_dict = {}
         ken_dict = {}
+        running_time = {}
         for time in [0.5,0.75,1,1.25,1.5]:
             network_name = './dataset/real-influence/MN_SIR_' + str(time) + 'beitac/' + multiplex_network + '.txt'
             # dc_k,dc_dict = DC(PATH,nodes_num,network_name)
@@ -483,11 +486,13 @@ if __name__ == '__main__':
             # ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
             #                             'f-e': f_k, 'prgc': prgc_k,
             #                             'ed': ed_k, 'mgnn-al': mgnn_k}
-            ed_k, ed_dict = ED(PATH, nodes_num, network_name)
+            ed_k, ed_dict ,ed_time= ED(PATH, nodes_num, network_name)
             nodes_ranking_dict[time] = {'ed':ed_dict}
             ken_dict[time] = {'ed':ed_k}
+            running_time = {'ed':ed_time}
         Result_sorted_dict[name] = nodes_ranking_dict
         Result_kendall[name] = ken_dict
+        Result_runningtime[name] = running_time
 
 
     with open('node_ranking_dict_ed_LargeScaleNetwork.pkl', 'wb') as f:
