@@ -94,6 +94,7 @@ def GLSTM(path,nodes_num,network_name):
     Gs, total_layers = load_multilayer_graph(path)
     node_feature_lsit = []
     maps = []
+    stime = time.time()
     for i in range(total_layers):  # 将每层网络的节点映射到0-n，保存映射关系。模型预测后转换节点映射。
         # 查找入度为0的节点
         zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
@@ -114,6 +115,7 @@ def GLSTM(path,nodes_num,network_name):
     g_list = [dgl.from_networkx(Gs[i]) for i in range(total_layers)]
 
     pre_sir_dict = {}
+
     for i in range(total_layers):
         model.eval()
         with torch.no_grad():
@@ -125,6 +127,8 @@ def GLSTM(path,nodes_num,network_name):
         sorted_node_influence = dict(sorted(node_influence.items(), key=lambda x: x[1], reverse=True))
         pre_dict = sorted_node_influence
         pre_sir_dict[i + 1] = pre_dict
+    etime = time.time()
+    total_time = etime-stime
     # print(pre_sir_dict)
     # print(maps)
     result = {}
@@ -142,7 +146,7 @@ def GLSTM(path,nodes_num,network_name):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0],pre_avg_sir_dict
+    return k[0],pre_avg_sir_dict,total_time
 
 def RCNN(path,nodes_num,network_name):
     L = 28
@@ -150,6 +154,7 @@ def RCNN(path,nodes_num,network_name):
     Gs, total_layers = load_multilayer_graph(path)
     node_feature_lsit = []
     maps = []
+    stime = time.time()
     for i in range(total_layers):  # 将每层网络的节点映射到0-n，保存映射关系。模型预测后转换节点映射。
         # 查找入度为0的节点
         zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
@@ -169,6 +174,7 @@ def RCNN(path,nodes_num,network_name):
 
     g_list = [dgl.from_networkx(Gs[i]) for i in range(total_layers)]
 
+
     pre_sir_dict = {}
     for i in range(total_layers):
         model.eval()
@@ -181,6 +187,8 @@ def RCNN(path,nodes_num,network_name):
         sorted_node_influence = dict(sorted(node_influence.items(), key=lambda x: x[1], reverse=True))
         pre_dict = sorted_node_influence
         pre_sir_dict[i + 1] = pre_dict
+    etime = time.time()
+    total_time  = etime-stime
     # print(pre_sir_dict)
     # print(maps)
     result = {}
@@ -198,7 +206,7 @@ def RCNN(path,nodes_num,network_name):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0],pre_avg_sir_dict
+    return k[0],pre_avg_sir_dict,total_time
 
 
 
@@ -207,13 +215,15 @@ def RCNN(path,nodes_num,network_name):
 def DC(path,nodes_num,NetworkName):
     Gs, total_layers = load_multilayer_graph(path)
     DegreeDict = {}
+    stime = time.time()
     for i in range(total_layers):
         # 查找入度为0的节点
         zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
         Gs[i].remove_nodes_from(zero_degree_nodes)
         dc = nx.degree_centrality(Gs[i])
         DegreeDict[i+1] = dc
-
+    etime = time.time()
+    total_time = etime-stime
     multiplex_network = path.split('.')[-2].split('/')[-1]
     network_name = NetworkName
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
@@ -227,18 +237,20 @@ def DC(path,nodes_num,NetworkName):
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
 
-    return k[0],pre_avg_sir_dict
+    return k[0],pre_avg_sir_dict,total_time
 
 def k_shell(path,nodes_num,network_name):
     Gs, total_layers = load_multilayer_graph(path)
     KshellDict = {}
+    stime = time.time()
     for i in range(total_layers):
         # 查找入度为0的节点
         zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
         Gs[i].remove_nodes_from(zero_degree_nodes)
         kshell = nx.core_number(Gs[i])
         KshellDict[i + 1] = kshell
-
+    etime= time.time()
+    total_time = etime-stime
 
     sir_dict,_ = load_multilayer_sir_labels(network_name, nodes_num, total_layers)
     sir_list = [key for key in sir_dict.keys()]
@@ -249,7 +261,7 @@ def k_shell(path,nodes_num,network_name):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0],pre_avg_sir_dict
+    return k[0],pre_avg_sir_dict,total_time
 
 def f_eigenvector_centrality(path,nodes_num,NetworkName):
     Gs, total_layers = load_multilayer_graph(path)
@@ -261,14 +273,16 @@ def f_eigenvector_centrality(path,nodes_num,NetworkName):
     sir_list = [key for key in sir_dict.keys()]
     node_rank_simu = list(range(0, len(sir_list)))
     print('sir_list',sir_list)
+    stime = time.time()
     f_eigenvector_dict,layer_inf = MultiPR(Gs,nodes_num)
-
+    etime=time.time()
+    total_time = etime-stime
     f_eigenvector_sorted_node = [key for key in f_eigenvector_dict.keys()]
     node_rank_f_eigenvector = [f_eigenvector_sorted_node.index(x) if x in f_eigenvector_sorted_node else len(f_eigenvector_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_f_eigenvector)
     print('node_rank_f_eigenvector',node_rank_f_eigenvector)
 
-    return k[0],f_eigenvector_dict
+    return k[0],f_eigenvector_dict,total_time
 
 
 def PRGC(path,nodes_num,NetworkName):
@@ -302,7 +316,7 @@ def PRGC(path,nodes_num,NetworkName):
     #print(weighted_distance.shape)
     #print(np.sum((weighted_distance > 0) ))
     combined_adj = np.sum(adj_matrix, axis=2)  # 综合所有层的信息，得到形状 (N, N)
-
+    stime =time.time()
     for i in range(num_nodes):
 
 
@@ -336,7 +350,8 @@ def PRGC(path,nodes_num,NetworkName):
 
         # 存储最终影响值
         final_influence[i+1] = first_order_influence + second_order_influence
-
+    etime = time.time()
+    total_time = etime-stime
     print('keys',final_influence.keys())
     prgc_dict = dict(sorted(final_influence.items(),key=lambda x:x[1],reverse=True))
     print('pd',prgc_dict)
@@ -358,7 +373,7 @@ def PRGC(path,nodes_num,NetworkName):
     print('node_rank_prgc', node_rank_prgc)
 
 
-    return k[0], prgc_dict
+    return k[0], prgc_dict,total_time
 
 
 
@@ -375,7 +390,7 @@ def MGNN_AL(path,nodes_num,NetworkName):
     Gs, total_layers = load_multilayer_graph(path)
     node_feature_lsit = []
     maps = []
-
+    stime = time.time()
     for i in range(total_layers):            #将每层网络的节点映射到0-n，保存映射关系。模型预测后转换节点映射。
         # 查找入度为0的节点
         zero_degree_nodes = [node for node, in_deg in Gs[i].degree() if in_deg == 0]
@@ -427,6 +442,8 @@ def MGNN_AL(path,nodes_num,NetworkName):
         pre_sir_dict[i + 1] = pre_dict
         # print(pre_sir_dict)
         # print(maps)
+    etime = time.time()
+    total_time = etime-stime
     result = {}
     for i in range(total_layers):
         dic = {}
@@ -442,7 +459,7 @@ def MGNN_AL(path,nodes_num,NetworkName):
     pre_sorted_node = [key for key in pre_avg_sir_dict.keys()]
     node_rank_p = [pre_sorted_node.index(x) if x in pre_sorted_node else len(pre_sorted_node) for x in sir_list]
     k = kendalltau(node_rank_simu, node_rank_p)
-    return k[0],pre_avg_sir_dict
+    return k[0],pre_avg_sir_dict,total_time
 
 if __name__ == '__main__':
 
