@@ -471,8 +471,8 @@ if __name__ == '__main__':
         nodes_ranking_dict = {}
         ken_dict = {}
         running_time = {}
-        for time in [0.5,0.75,1,1.25,1.5]:
-            network_name = './dataset/real-influence/MN_SIR_' + str(time) + 'beitac/' + multiplex_network + '.txt'
+        for t in [0.5,0.75,1,1.25,1.5]:
+            network_name = './dataset/real-influence/MN_SIR_' + str(t) + 'beitac/' + multiplex_network + '.txt'
             # dc_k,dc_dict = DC(PATH,nodes_num,network_name)
             # kshell_k,kshell_dict = k_shell(PATH,nodes_num,network_name)
             # glstm_k,glstm_dict = GLSTM(PATH,nodes_num,network_name)
@@ -487,9 +487,9 @@ if __name__ == '__main__':
             #                             'f-e': f_k, 'prgc': prgc_k,
             #                             'ed': ed_k, 'mgnn-al': mgnn_k}
             ed_k, ed_dict ,ed_time= ED(PATH, nodes_num, network_name)
-            nodes_ranking_dict[time] = {'ed':ed_dict}
-            ken_dict[time] = {'ed':ed_k}
-            running_time = {'ed':ed_time}
+            nodes_ranking_dict[t] = {'ed':ed_dict}
+            ken_dict[t] = {'ed':ed_k}
+            running_time[t] = {'ed':ed_time}
         Result_sorted_dict[name] = nodes_ranking_dict
         Result_kendall[name] = ken_dict
         Result_runningtime[name] = running_time
