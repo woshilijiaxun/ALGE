@@ -490,23 +490,23 @@ if __name__ == '__main__':
         running_time = {}
         for t in [0.5,0.75,1,1.25,1.5]:
             network_name = './dataset/real-influence/MN_SIR_' + str(t) + 'beitac/' + multiplex_network + '.txt'
-            # dc_k,dc_dict = DC(PATH,nodes_num,network_name)
-            # kshell_k,kshell_dict = k_shell(PATH,nodes_num,network_name)
-            # glstm_k,glstm_dict = GLSTM(PATH,nodes_num,network_name)
-            # rcnn_k,rcnn_dict = RCNN(PATH,nodes_num,network_name)
-            # f_k,f_dict= f_eigenvector_centrality(PATH,nodes_num,network_name)
-            # prgc_k,prgc_dict= PRGC(PATH,nodes_num,network_name)
-            # ed_k,ed_dict = ED(PATH,nodes_num,network_name)
-            # mgnn_k,mgnn_dict = MGNN_AL(PATH,nodes_num,network_name)
-            # nodes_ranking_dict[time] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
-            #              'ed':ed_dict,'mgnn-al':mgnn_dict}
-            # ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
-            #                             'f-e': f_k, 'prgc': prgc_k,
-            #                             'ed': ed_k, 'mgnn-al': mgnn_k}
-            ed_k, ed_dict ,ed_time= ED(PATH, nodes_num, network_name)
-            nodes_ranking_dict[t] = {'ed':ed_dict}
-            ken_dict[t] = {'ed':ed_k}
-            running_time[t] = {'ed':ed_time}
+            dc_k,dc_dict,dc_time = DC(PATH,nodes_num,network_name)
+            kshell_k,kshell_dict,kshell_time = k_shell(PATH,nodes_num,network_name)
+            glstm_k,glstm_dict,glstm_time = GLSTM(PATH,nodes_num,network_name)
+            rcnn_k,rcnn_dict,rcnn_time = RCNN(PATH,nodes_num,network_name)
+            f_k,f_dict,f_time= f_eigenvector_centrality(PATH,nodes_num,network_name)
+            prgc_k,prgc_dict,prgc_time= PRGC(PATH,nodes_num,network_name)
+            ed_k,ed_dict,ed_time = ED(PATH,nodes_num,network_name)
+            mgnn_k,mgnn_dict ,mgnn_time= MGNN_AL(PATH,nodes_num,network_name)
+            nodes_ranking_dict[time] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
+                         'ed':ed_dict,'mgnn-al':mgnn_dict}
+            ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
+                                        'f-e': f_k, 'prgc': prgc_k,
+                                        'ed': ed_k, 'mgnn-al': mgnn_k}
+            running_time[time] = {'dc': dc_time, 'kshell': kshell_time, 'glstm': glstm_time, 'rcnn': rcnn_time,
+                              'f-e': f_time, 'prgc': prgc_time,
+                              'ed': ed_time, 'mgnn-al': mgnn_time}
+
         Result_sorted_dict[name] = nodes_ranking_dict
         Result_kendall[name] = ken_dict
         Result_runningtime[name] = running_time
