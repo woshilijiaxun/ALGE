@@ -1,6 +1,7 @@
 import pickle
 import pandas as pd
-
+from E_D import GLSTM
+from Utils import LSTMModel
 def Mr(dic):
     '''
     两种dic
@@ -22,30 +23,43 @@ def Mr(dic):
 
 
 if __name__ == '__main__':
-    with open('node_ranking_dict.pkl', 'rb') as f:   #{network1:{1:{method1,method2}}}
+    with open('kendall[0.5-1.5].pkl', 'rb') as f:   #{network1:{1:{method1,method2}}}
         data = pickle.load(f)
-    Result = {}
-    for networkname,t in data.items():
-        method_result = {}
-        for t1,method_dict in t.items():
-            for method,sorted_dict in method_dict.items():
-                method_result[method] = round(Mr(sorted_dict),4)
 
-        Result[networkname] = method_result
+    # for k,v in data.items():
+    #     for v1,v2 in v.items():
+    #         print(k,v1,v2)
+    #     print('-----------------------------------------------')
 
-    for name,r in Result.items():
-        print(name,r)
-
-
-
-
-
-    # # 转换成 DataFrame
-    # df = pd.DataFrame.from_dict(Result, orient='index')
+    # Result = {}
+    # for networkname,t in data.items():
+    #     method_result = {}
+    #     for t1,method_dict in t.items():
+    #         for method,sorted_dict in method_dict.items():
+    #             method_result[method] = round(Mr(sorted_dict),4)
     #
-    # # 重置索引，把 Network 变成第一列
-    # df.index.name = 'Network'
-    # df.reset_index(inplace=True)
+    #     Result[networkname] = method_result
     #
-    # # 写入 Excel
-    # df.to_excel("mono_result.xlsx", index=False)
+    # for name,r in Result.items():
+    #     print(name,r)
+
+    # PATH='./dataset/real_multiplex_networks/MNdata/cKM-Physicians-Innovation_multiplex.edges'
+    # nodes_num=246
+    # network_name='./dataset/real-influence/MN_SIR_' + '1beitac/' + 'cKM-Physicians-Innovation_multiplex' + '.txt'
+    # glstm_k, glstm_dict = GLSTM(PATH, nodes_num, network_name)
+    #
+    # print(glstm_k)
+
+    # 整理成一个列表，方便转DataFrame
+    rows = []
+    for network, t_dict in data.items():
+        for t, methods in t_dict.items():
+            row = {"Network": network, "t": t}
+            row.update(methods)
+            rows.append(row)
+
+    # 转成DataFrame
+    df = pd.DataFrame(rows)
+
+    # 保存到Excel
+    df.to_excel("ken)result.xlsx", index=False)
