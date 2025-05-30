@@ -445,16 +445,13 @@ def MGNN_AL(path,nodes_num,NetworkName):
 if __name__ == '__main__':
 
 
-    # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980,'drosophila_genetic_multiplex': 8215}
+    #nodes_num_from_multiplex_networks = {'celegans_connectome_multiplex': 279,
     #                                      'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-    #                                      'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215, 'hepatitusC_genetic_multiplex': 105,
-    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71, 'rattus_genetic_multiplex': 2640}
-    nodes_num_from_multiplex_networks = {'celegans_connectome_multiplex': 279,
-                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-                                         'cS-Aarhus_multiplex': 61,
-                                         'hepatitusC_genetic_multiplex': 105,
-                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
-                                         'rattus_genetic_multiplex': 2640}
+    #                                      'cS-Aarhus_multiplex': 61,
+    #                                      'hepatitusC_genetic_multiplex': 105,
+    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
+    #                                      'rattus_genetic_multiplex': 2640}
 
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
     Result_sorted_dict= {}
@@ -473,27 +470,30 @@ if __name__ == '__main__':
         ken_dict = {}
         for time in [0.5,0.75,1,1.25,1.5]:
             network_name = './dataset/real-influence/MN_SIR_' + str(time) + 'beitac/' + multiplex_network + '.txt'
-            dc_k,dc_dict = DC(PATH,nodes_num,network_name)
-            kshell_k,kshell_dict = k_shell(PATH,nodes_num,network_name)
-            glstm_k,glstm_dict = GLSTM(PATH,nodes_num,network_name)
-            rcnn_k,rcnn_dict = RCNN(PATH,nodes_num,network_name)
-            f_k,f_dict= f_eigenvector_centrality(PATH,nodes_num,network_name)
-            prgc_k,prgc_dict= PRGC(PATH,nodes_num,network_name)
-            ed_k,ed_dict = ED(PATH,nodes_num,network_name)
-            mgnn_k,mgnn_dict = MGNN_AL(PATH,nodes_num,network_name)
-            nodes_ranking_dict[time] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
-                         'ed':ed_dict,'mgnn-al':mgnn_dict}
-            ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
-                                        'f-e': f_k, 'prgc': prgc_k,
-                                        'ed': ed_k, 'mgnn-al': mgnn_k}
+            # dc_k,dc_dict = DC(PATH,nodes_num,network_name)
+            # kshell_k,kshell_dict = k_shell(PATH,nodes_num,network_name)
+            # glstm_k,glstm_dict = GLSTM(PATH,nodes_num,network_name)
+            # rcnn_k,rcnn_dict = RCNN(PATH,nodes_num,network_name)
+            # f_k,f_dict= f_eigenvector_centrality(PATH,nodes_num,network_name)
+            # prgc_k,prgc_dict= PRGC(PATH,nodes_num,network_name)
+            # ed_k,ed_dict = ED(PATH,nodes_num,network_name)
+            # mgnn_k,mgnn_dict = MGNN_AL(PATH,nodes_num,network_name)
+            # nodes_ranking_dict[time] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
+            #              'ed':ed_dict,'mgnn-al':mgnn_dict}
+            # ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
+            #                             'f-e': f_k, 'prgc': prgc_k,
+            #                             'ed': ed_k, 'mgnn-al': mgnn_k}
+            ed_k, ed_dict = ED(PATH, nodes_num, network_name)
+            nodes_ranking_dict[time] = {'ed':ed_dict}
+            ken_dict[time] = {'ed':ed_k}
         Result_sorted_dict[name] = nodes_ranking_dict
         Result_kendall[name] = ken_dict
 
 
-    with open('node_ranking_dict.pkl', 'wb') as f:
+    with open('node_ranking_dict_ed_LargeScaleNetwork.pkl', 'wb') as f:
         pickle.dump(Result_sorted_dict, f)
 
-    with open('kendall[0.5-1.5].pkl', 'wb') as f:
+    with open('kendall[0.5-1.5]_ed_LargeScaleNetwork.pkl', 'wb') as f:
         pickle.dump(Result_kendall, f)
 
 
