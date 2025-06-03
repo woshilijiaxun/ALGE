@@ -463,14 +463,12 @@ def MGNN_AL(path,nodes_num,NetworkName):
 
 if __name__ == '__main__':
 
-
-    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980,'drosophila_genetic_multiplex': 8215}
-    #nodes_num_from_multiplex_networks = {'celegans_connectome_multiplex': 279,
-    #                                      'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
-    #                                      'cS-Aarhus_multiplex': 61,
-    #                                      'hepatitusC_genetic_multiplex': 105,
-    #                                      'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
-    #                                      'rattus_genetic_multiplex': 2640}
+    nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,
+                                         'celegans_genetic_multiplex': 3879, 'cKM-Physicians-Innovation_multiplex': 246,
+                                         'cS-Aarhus_multiplex': 61, 'drosophila_genetic_multiplex': 8215,
+                                         'hepatitusC_genetic_multiplex': 105,
+                                         'humanHIV1_genetic_multiplex': 1005, 'lazega-Law-Firm_multiplex': 71,
+                                         'rattus_genetic_multiplex': 2640}
 
     network = [key+'.edges' for key in nodes_num_from_multiplex_networks.keys()]
     Result_sorted_dict= {}
@@ -488,7 +486,7 @@ if __name__ == '__main__':
         nodes_ranking_dict = {}
         ken_dict = {}
         running_time = {}
-        for t in [0.5,0.75,1,1.25,1.5]:
+        for t in [0.5,0.75]:
             network_name = './dataset/real-influence/MN_SIR_' + str(t) + 'beitac/' + multiplex_network + '.txt'
             dc_k,dc_dict,dc_time = DC(PATH,nodes_num,network_name)
             kshell_k,kshell_dict,kshell_time = k_shell(PATH,nodes_num,network_name)
@@ -498,12 +496,12 @@ if __name__ == '__main__':
             prgc_k,prgc_dict,prgc_time= PRGC(PATH,nodes_num,network_name)
             ed_k,ed_dict,ed_time = ED(PATH,nodes_num,network_name)
             mgnn_k,mgnn_dict ,mgnn_time= MGNN_AL(PATH,nodes_num,network_name)
-            nodes_ranking_dict[time] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
+            nodes_ranking_dict[t] = {'dc':dc_dict,'kshell':kshell_dict,'glstm':glstm_dict,'rcnn':rcnn_dict,'f-e':f_dict,'prgc':prgc_dict,
                          'ed':ed_dict,'mgnn-al':mgnn_dict}
-            ken_dict[time] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
+            ken_dict[t] = {'dc': dc_k, 'kshell': kshell_k, 'glstm': glstm_k, 'rcnn': rcnn_k,
                                         'f-e': f_k, 'prgc': prgc_k,
                                         'ed': ed_k, 'mgnn-al': mgnn_k}
-            running_time[time] = {'dc': dc_time, 'kshell': kshell_time, 'glstm': glstm_time, 'rcnn': rcnn_time,
+            running_time[t] = {'dc': dc_time, 'kshell': kshell_time, 'glstm': glstm_time, 'rcnn': rcnn_time,
                               'f-e': f_time, 'prgc': prgc_time,
                               'ed': ed_time, 'mgnn-al': mgnn_time}
 
@@ -512,13 +510,14 @@ if __name__ == '__main__':
         Result_runningtime[name] = running_time
 
 
-    with open('node_ranking_dict_ed_LargeScaleNetwork.pkl', 'wb') as f:
+    with open('[0.5-0.75]node_ranking_dict.pkl', 'wb') as f:
         pickle.dump(Result_sorted_dict, f)
 
-    with open('kendall[0.5-1.5]_ed_LargeScaleNetwork.pkl', 'wb') as f:
+    with open('[0.5-0.75]kendall[0.5-1.5].pkl', 'wb') as f:
         pickle.dump(Result_kendall, f)
 
-
+    with open('[0.5-0.75]runtime.pkl', 'wb') as f:
+        pickle.dump(Result_runningtime, f)
         #model = torch.load('influence_evaluation/ALGE_B_11_20.pth')
 
     # nodes_num_from_multiplex_networks = {'arabidopsis_genetic_multiplex': 6980, 'celegans_connectome_multiplex': 279,

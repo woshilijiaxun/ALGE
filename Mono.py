@@ -23,8 +23,9 @@ def Mr(dic):
 
 
 if __name__ == '__main__':
-    with open('kendall[0.5-1.5].pkl', 'rb') as f:   #{network1:{1:{method1,method2}}}
+    with open('[1-1.25]runtime.pkl', 'rb') as f:   #{network1:{1:{method1,method2}}}
         data = pickle.load(f)
+
 
     # for k,v in data.items():
     #     for v1,v2 in v.items():
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     #
     # print(glstm_k)
 
-    # 整理成一个列表，方便转DataFrame
+    #整理成一个列表，方便转DataFrame
     rows = []
     for network, t_dict in data.items():
         for t, methods in t_dict.items():
@@ -62,4 +63,4 @@ if __name__ == '__main__':
     df = pd.DataFrame(rows)
 
     # 保存到Excel
-    df.to_excel("ken)result.xlsx", index=False)
+    df.to_excel("[1]runtime.xlsx", index=False)
